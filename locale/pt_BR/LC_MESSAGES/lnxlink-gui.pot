@@ -1,0 +1,347 @@
+# LNXlink GUI - Translation Template
+# Copyright (C) 2024 LNXlink GUI Contributors
+# This file is distributed under the same license as the lnxlink-gui package.
+#
+# HOW TO CONTRIBUTE A TRANSLATION:
+#   1. Copy this file to locale/<lang>/LC_MESSAGES/lnxlink-gui.po
+#      Example for French: locale/fr_FR/LC_MESSAGES/lnxlink-gui.po
+#   2. Fill in the "msgstr" fields with your translations
+#   3. Compile: msgfmt locale/fr_FR/LC_MESSAGES/lnxlink-gui.po -o locale/fr_FR/LC_MESSAGES/lnxlink-gui.mo
+#   4. Add your language to i18n.py AVAILABLE_LANGUAGES dict
+#   5. Open a Pull Request on GitHub!
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: lnxlink-gui 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/your-repo/lnxlink-gui/issues\n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- App / Window ---
+msgid "LNXlink GUI"
+msgstr ""
+
+msgid "MQTT Agent Control Panel"
+msgstr ""
+
+msgid "Save Config"
+msgstr ""
+
+msgid "About"
+msgstr ""
+
+msgid "Configuration saved successfully!"
+msgstr ""
+
+msgid "Error saving config: {error}"
+msgstr ""
+
+# --- Navigation ---
+msgid "Dashboard"
+msgstr ""
+
+msgid "MQTT Config"
+msgstr ""
+
+msgid "Sensors"
+msgstr ""
+
+msgid "Commands"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+# --- Dashboard ---
+msgid "Service Status"
+msgstr ""
+
+msgid "Controls"
+msgstr ""
+
+msgid "Service Detail"
+msgstr ""
+
+msgid "● Running"
+msgstr ""
+
+msgid "● Stopped"
+msgstr ""
+
+msgid "● Failed"
+msgstr ""
+
+msgid "● Unknown"
+msgstr ""
+
+msgid "● Checking…"
+msgstr ""
+
+msgid "Start"
+msgstr ""
+
+msgid "Stop"
+msgstr ""
+
+msgid "Restart"
+msgstr ""
+
+msgid "Start on Login"
+msgstr ""
+
+msgid "Enable lnxlink.service as a systemd user unit"
+msgstr ""
+
+msgid "Refresh Status"
+msgstr ""
+
+# --- MQTT Config ---
+msgid "Broker Connection"
+msgstr ""
+
+msgid "Connect to your MQTT broker (e.g., Mosquitto on Home Assistant OS)."
+msgstr ""
+
+msgid "Broker Host / IP"
+msgstr ""
+
+msgid "e.g. 192.168.1.10 or homeassistant.local"
+msgstr ""
+
+msgid "Port"
+msgstr ""
+
+msgid "Default: 1883"
+msgstr ""
+
+msgid "Authentication"
+msgstr ""
+
+msgid "Leave blank if your broker does not require credentials."
+msgstr ""
+
+msgid "Username"
+msgstr ""
+
+msgid "MQTT username"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "MQTT password"
+msgstr ""
+
+msgid "Home Assistant Discovery"
+msgstr ""
+
+msgid "MQTT discovery settings — must match your HA configuration."
+msgstr ""
+
+msgid "Discovery Prefix"
+msgstr ""
+
+msgid "Default: homeassistant"
+msgstr ""
+
+msgid "LNXlink Prefix"
+msgstr ""
+
+msgid "Default: lnxlink"
+msgstr ""
+
+msgid "Changes take effect after restarting the LNXlink service."
+msgstr ""
+
+# --- Sensors ---
+msgid "Hardware"
+msgstr ""
+
+msgid "Connectivity"
+msgstr ""
+
+msgid "Desktop"
+msgstr ""
+
+msgid "Other"
+msgstr ""
+
+msgid "Enable All"
+msgstr ""
+
+msgid "Disable All"
+msgstr ""
+
+msgid "Disabled sensors are excluded from MQTT discovery. Restart the service to apply."
+msgstr ""
+
+msgid "Module: {key}"
+msgstr ""
+
+# --- Commands ---
+msgid "Custom Commands"
+msgstr ""
+
+msgid "Add Command"
+msgstr ""
+
+msgid "Commands are exposed to Home Assistant via MQTT and can be triggered as scripts or automations."
+msgstr ""
+
+msgid "No custom commands yet.\nClick \"Add Command\" to create one."
+msgstr ""
+
+msgid "Edit Command"
+msgstr ""
+
+msgid "Add Command"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Command Name"
+msgstr ""
+
+msgid "Used as the MQTT topic slug. Use lowercase letters, numbers, and underscores only."
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Bash Command"
+msgstr ""
+
+msgid "The shell command executed when Home Assistant triggers this action."
+msgstr ""
+
+msgid "Delete Command?"
+msgstr ""
+
+msgid "Delete \"{name}\"? This cannot be undone."
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+# --- Settings ---
+msgid "Appearance"
+msgstr ""
+
+msgid "Color Scheme"
+msgstr ""
+
+msgid "System Default"
+msgstr ""
+
+msgid "Light"
+msgstr ""
+
+msgid "Dark"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "App Language"
+msgstr ""
+
+msgid "Restart the app to apply language changes."
+msgstr ""
+
+msgid "Backup & Restore"
+msgstr ""
+
+msgid "Export Configuration"
+msgstr ""
+
+msgid "Save config.yaml to a custom location"
+msgstr ""
+
+msgid "Import Configuration"
+msgstr ""
+
+msgid "Restore config.yaml from a backup"
+msgstr ""
+
+msgid "Configuration exported to {path}"
+msgstr ""
+
+msgid "Configuration imported successfully!"
+msgstr ""
+
+msgid "Error exporting: {error}"
+msgstr ""
+
+msgid "Error importing: {error}"
+msgstr ""
+
+# --- Welcome / Installer ---
+msgid "LNXlink not found"
+msgstr ""
+
+msgid "LNXlink is not installed on this system.\nDetected distro: {distro}"
+msgstr ""
+
+msgid "What will be installed:"
+msgstr ""
+
+msgid "System dependencies"
+msgstr ""
+
+msgid "gcc, cmake and audio libs ({family})"
+msgstr ""
+
+msgid "pipx"
+msgstr ""
+
+msgid "Isolated Python app manager"
+msgstr ""
+
+msgid "⚠ Installation requires sudo privileges to install system packages."
+msgstr ""
+
+msgid "Preparing..."
+msgstr ""
+
+msgid "Skip (LNXlink already installed)"
+msgstr ""
+
+msgid "Install Automatically"
+msgstr ""
+
+msgid "View manual installation on GitHub"
+msgstr ""
+
+msgid "❌ {error}"
+msgstr ""
+
+msgid "Distro detected: {distro}"
+msgstr ""
+
+msgid "Installing system dependencies..."
+msgstr ""
+
+msgid "Installing pipx..."
+msgstr ""
+
+msgid "pipx already installed ✓"
+msgstr ""
+
+msgid "Installing LNXlink via pipx..."
+msgstr ""
+
+msgid "Verifying installation..."
+msgstr ""
+
+msgid "LNXlink installed successfully! ✓"
+msgstr ""

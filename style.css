@@ -1,0 +1,182 @@
+/*
+ * style.css - LNXlink GUI custom styles
+ *
+ * Estratégia:
+ *   - Usamos variáveis CSS do libadwaita (@accent_color, @accent_bg_color,
+ *     @window_bg_color, etc.) para seguir automaticamente a accent color
+ *     escolhida pelo usuário no GNOME Settings → Appearance.
+ *   - Usamos @media (prefers-color-scheme: dark/light) para ajustes
+ *     específicos de cada tema, sem sobrescrever o que o libadwaita já faz bem.
+ *   - NÃO forçamos cores absolutas (hex/rgb) — tudo relativo às variáveis
+ *     do sistema para integração perfeita com qualquer tema GNOME.
+ */
+
+/* ------------------------------------------------------------------ */
+/*  Variáveis do libadwaita disponíveis (referência):                  */
+/*    @accent_color         → cor de destaque (texto)                  */
+/*    @accent_bg_color      → cor de destaque (fundo de botões etc)    */
+/*    @accent_fg_color      → texto sobre accent_bg_color              */
+/*    @window_bg_color      → fundo da janela                          */
+/*    @window_fg_color      → texto principal                          */
+/*    @view_bg_color        → fundo de listas/cards                    */
+/*    @card_bg_color        → fundo de cards                           */
+/*    @headerbar_bg_color   → fundo do header bar                      */
+/*    @sidebar_bg_color     → fundo da sidebar                         */
+/*    @success_color        → verde                                     */
+/*    @warning_color        → amarelo/laranja                           */
+/*    @error_color          → vermelho                                  */
+/* ------------------------------------------------------------------ */
+
+
+/* ── Status do serviço no Dashboard ─────────────────────────────── */
+
+.service-status-running {
+    color: @success_color;
+    font-weight: bold;
+}
+
+.service-status-stopped {
+    color: @warning_color;
+    font-weight: bold;
+}
+
+.service-status-failed {
+    color: @error_color;
+    font-weight: bold;
+}
+
+.service-status-unknown {
+    color: alpha(@window_fg_color, 0.5);
+    font-weight: bold;
+}
+
+
+/* ── Log de status (TextView monoespaçado) ───────────────────────── */
+
+.status-log {
+    font-family: monospace;
+    font-size: 0.82em;
+    background-color: @view_bg_color;
+    color: @window_fg_color;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+/* Light mode: log ligeiramente mais escuro que o fundo */
+@media (prefers-color-scheme: light) {
+    .status-log {
+        background-color: shade(@view_bg_color, 0.96);
+    }
+}
+
+/* Dark mode: log ligeiramente mais claro que o fundo */
+@media (prefers-color-scheme: dark) {
+    .status-log {
+        background-color: shade(@view_bg_color, 1.08);
+    }
+}
+
+
+/* ── Sidebar de navegação ────────────────────────────────────────── */
+
+.navigation-sidebar row:selected {
+    background-color: alpha(@accent_bg_color, 0.15);
+    color: @accent_color;
+    border-radius: 6px;
+}
+
+.navigation-sidebar row:selected image {
+    color: @accent_color;
+}
+
+
+/* ── Botões de controle do Dashboard ────────────────────────────── */
+
+.control-btn {
+    min-width: 100px;
+    border-radius: 8px;
+}
+
+
+/* ── Indicador de módulo avançado (sensors) ─────────────────────── */
+
+.advanced-warning {
+    color: @warning_color;
+    font-size: 0.85em;
+}
+
+
+/* ── Restart badge — aparece quando há mudanças não salvas ───────── */
+
+.unsaved-indicator {
+    background-color: alpha(@accent_bg_color, 0.12);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: @accent_color;
+    font-size: 0.85em;
+}
+
+
+/* ── Cards de informação na Welcome page ────────────────────────── */
+
+.welcome-card {
+    background-color: @card_bg_color;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+/* Dark: card levemente elevado */
+@media (prefers-color-scheme: dark) {
+    .welcome-card {
+        background-color: shade(@card_bg_color, 1.1);
+        box-shadow: 0 2px 8px alpha(black, 0.3);
+    }
+}
+
+/* Light: card com sombra suave */
+@media (prefers-color-scheme: light) {
+    .welcome-card {
+        box-shadow: 0 1px 4px alpha(black, 0.08);
+    }
+}
+
+
+/* ── Barra de progresso de instalação ───────────────────────────── */
+
+progressbar trough {
+    border-radius: 99px;
+    min-height: 6px;
+}
+
+progressbar progress {
+    background-color: @accent_bg_color;
+    border-radius: 99px;
+}
+
+
+/* ── Ajustes finos para dark mode ───────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+    /* Entry rows com fundo ligeiramente diferenciado */
+    .entry-row-bg {
+        background-color: shade(@view_bg_color, 0.92);
+    }
+
+    /* Separadores mais discretos */
+    separator {
+        opacity: 0.3;
+    }
+}
+
+
+/* ── Ajustes finos para light mode ──────────────────────────────── */
+
+@media (prefers-color-scheme: light) {
+    .entry-row-bg {
+        background-color: shade(@view_bg_color, 0.97);
+    }
+
+    separator {
+        opacity: 0.5;
+    }
+}

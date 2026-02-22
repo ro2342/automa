@@ -1,0 +1,327 @@
+# LNXlink GUI - Tradução Português (Brasil)
+# Copyright (C) 2024 LNXlink GUI Contributors
+# License: GPL-3.0
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: lnxlink-gui 1.0.0\n"
+"PO-Revision-Date: 2024-01-01 00:00-0300\n"
+"Last-Translator: Comunidade LNXlink GUI\n"
+"Language-Team: Portuguese (Brazil)\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "LNXlink GUI"
+msgstr "LNXlink GUI"
+
+msgid "MQTT Agent Control Panel"
+msgstr "Painel de Controle do Agente MQTT"
+
+msgid "Save Config"
+msgstr "Salvar Configuração"
+
+msgid "About"
+msgstr "Sobre"
+
+msgid "Configuration saved successfully!"
+msgstr "Configuração salva com sucesso!"
+
+msgid "Error saving config: {error}"
+msgstr "Erro ao salvar configuração: {error}"
+
+msgid "Dashboard"
+msgstr "Painel"
+
+msgid "MQTT Config"
+msgstr "Config. MQTT"
+
+msgid "Sensors"
+msgstr "Sensores"
+
+msgid "Commands"
+msgstr "Comandos"
+
+msgid "Settings"
+msgstr "Configurações"
+
+msgid "Service Status"
+msgstr "Status do Serviço"
+
+msgid "Controls"
+msgstr "Controles"
+
+msgid "Service Detail"
+msgstr "Detalhes do Serviço"
+
+msgid "● Running"
+msgstr "● Rodando"
+
+msgid "● Stopped"
+msgstr "● Parado"
+
+msgid "● Failed"
+msgstr "● Falhou"
+
+msgid "● Unknown"
+msgstr "● Desconhecido"
+
+msgid "● Checking…"
+msgstr "● Verificando…"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Stop"
+msgstr "Parar"
+
+msgid "Restart"
+msgstr "Reiniciar"
+
+msgid "Start on Login"
+msgstr "Iniciar com o Sistema"
+
+msgid "Enable lnxlink.service as a systemd user unit"
+msgstr "Habilitar lnxlink.service como serviço do usuário no systemd"
+
+msgid "Refresh Status"
+msgstr "Atualizar Status"
+
+msgid "Broker Connection"
+msgstr "Conexão com o Broker"
+
+msgid "Connect to your MQTT broker (e.g., Mosquitto on Home Assistant OS)."
+msgstr "Conecte ao seu broker MQTT (ex: Mosquitto no Home Assistant OS)."
+
+msgid "Broker Host / IP"
+msgstr "Host / IP do Broker"
+
+msgid "e.g. 192.168.1.10 or homeassistant.local"
+msgstr "ex: 192.168.1.10 ou homeassistant.local"
+
+msgid "Port"
+msgstr "Porta"
+
+msgid "Default: 1883"
+msgstr "Padrão: 1883"
+
+msgid "Authentication"
+msgstr "Autenticação"
+
+msgid "Leave blank if your broker does not require credentials."
+msgstr "Deixe em branco se o broker não exigir credenciais."
+
+msgid "Username"
+msgstr "Usuário"
+
+msgid "MQTT username"
+msgstr "Usuário do MQTT"
+
+msgid "Password"
+msgstr "Senha"
+
+msgid "MQTT password"
+msgstr "Senha do MQTT"
+
+msgid "Home Assistant Discovery"
+msgstr "Descoberta do Home Assistant"
+
+msgid "MQTT discovery settings — must match your HA configuration."
+msgstr "Configurações de descoberta MQTT — devem coincidir com a config do HA."
+
+msgid "Discovery Prefix"
+msgstr "Prefixo de Descoberta"
+
+msgid "Default: homeassistant"
+msgstr "Padrão: homeassistant"
+
+msgid "LNXlink Prefix"
+msgstr "Prefixo do LNXlink"
+
+msgid "Default: lnxlink"
+msgstr "Padrão: lnxlink"
+
+msgid "Changes take effect after restarting the LNXlink service."
+msgstr "As alterações têm efeito após reiniciar o serviço LNXlink."
+
+msgid "Hardware"
+msgstr "Hardware"
+
+msgid "Connectivity"
+msgstr "Conectividade"
+
+msgid "Desktop"
+msgstr "Desktop"
+
+msgid "Other"
+msgstr "Outros"
+
+msgid "Enable All"
+msgstr "Habilitar Todos"
+
+msgid "Disable All"
+msgstr "Desabilitar Todos"
+
+msgid "Disabled sensors are excluded from MQTT discovery. Restart the service to apply."
+msgstr "Sensores desabilitados são excluídos da descoberta MQTT. Reinicie o serviço para aplicar."
+
+msgid "Module: {key}"
+msgstr "Módulo: {key}"
+
+msgid "Custom Commands"
+msgstr "Comandos Personalizados"
+
+msgid "Add Command"
+msgstr "Adicionar Comando"
+
+msgid "Commands are exposed to Home Assistant via MQTT and can be triggered as scripts or automations."
+msgstr "Os comandos são expostos ao Home Assistant via MQTT e podem ser acionados como scripts ou automações."
+
+msgid "No custom commands yet.\nClick \"Add Command\" to create one."
+msgstr "Nenhum comando personalizado ainda.\nClique em \"Adicionar Comando\" para criar um."
+
+msgid "Edit Command"
+msgstr "Editar Comando"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Save"
+msgstr "Salvar"
+
+msgid "Command Name"
+msgstr "Nome do Comando"
+
+msgid "Used as the MQTT topic slug. Use lowercase letters, numbers, and underscores only."
+msgstr "Usado como identificador no tópico MQTT. Use apenas letras minúsculas, números e underscores."
+
+msgid "Name"
+msgstr "Nome"
+
+msgid "Bash Command"
+msgstr "Comando Bash"
+
+msgid "The shell command executed when Home Assistant triggers this action."
+msgstr "O comando shell executado quando o Home Assistant acionar esta ação."
+
+msgid "Delete Command?"
+msgstr "Excluir Comando?"
+
+msgid "Delete \"{name}\"? This cannot be undone."
+msgstr "Excluir \"{name}\"? Esta ação não pode ser desfeita."
+
+msgid "Delete"
+msgstr "Excluir"
+
+msgid "Appearance"
+msgstr "Aparência"
+
+msgid "Color Scheme"
+msgstr "Esquema de Cores"
+
+msgid "System Default"
+msgstr "Padrão do Sistema"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Dark"
+msgstr "Escuro"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "App Language"
+msgstr "Idioma do App"
+
+msgid "Restart the app to apply language changes."
+msgstr "Reinicie o app para aplicar as mudanças de idioma."
+
+msgid "Backup & Restore"
+msgstr "Backup e Restauração"
+
+msgid "Export Configuration"
+msgstr "Exportar Configuração"
+
+msgid "Save config.yaml to a custom location"
+msgstr "Salvar config.yaml em um local personalizado"
+
+msgid "Import Configuration"
+msgstr "Importar Configuração"
+
+msgid "Restore config.yaml from a backup"
+msgstr "Restaurar config.yaml de um backup"
+
+msgid "Configuration exported to {path}"
+msgstr "Configuração exportada para {path}"
+
+msgid "Configuration imported successfully!"
+msgstr "Configuração importada com sucesso!"
+
+msgid "Error exporting: {error}"
+msgstr "Erro ao exportar: {error}"
+
+msgid "Error importing: {error}"
+msgstr "Erro ao importar: {error}"
+
+msgid "LNXlink not found"
+msgstr "LNXlink não encontrado"
+
+msgid "LNXlink is not installed on this system.\nDetected distro: {distro}"
+msgstr "O LNXlink não está instalado neste sistema.\nDistro detectada: {distro}"
+
+msgid "What will be installed:"
+msgstr "O que será instalado:"
+
+msgid "System dependencies"
+msgstr "Dependências do sistema"
+
+msgid "gcc, cmake and audio libs ({family})"
+msgstr "gcc, cmake e libs de áudio ({family})"
+
+msgid "pipx"
+msgstr "pipx"
+
+msgid "Isolated Python app manager"
+msgstr "Gerenciador de apps Python isolados"
+
+msgid "⚠ Installation requires sudo privileges to install system packages."
+msgstr "⚠ A instalação requer privilégios sudo para instalar pacotes do sistema."
+
+msgid "Preparing..."
+msgstr "Preparando..."
+
+msgid "Skip (LNXlink already installed)"
+msgstr "Pular (LNXlink já instalado)"
+
+msgid "Install Automatically"
+msgstr "Instalar Automaticamente"
+
+msgid "View manual installation on GitHub"
+msgstr "Ver instalação manual no GitHub"
+
+msgid "❌ {error}"
+msgstr "❌ {error}"
+
+msgid "Distro detected: {distro}"
+msgstr "Distro detectada: {distro}"
+
+msgid "Installing system dependencies..."
+msgstr "Instalando dependências do sistema..."
+
+msgid "Installing pipx..."
+msgstr "Instalando pipx..."
+
+msgid "pipx already installed ✓"
+msgstr "pipx já instalado ✓"
+
+msgid "Installing LNXlink via pipx..."
+msgstr "Instalando LNXlink via pipx..."
+
+msgid "Verifying installation..."
+msgstr "Verificando instalação..."
+
+msgid "LNXlink installed successfully! ✓"
+msgstr "LNXlink instalado com sucesso! ✓"
