@@ -1,136 +1,127 @@
-# LNXlink GUI
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![GNOME](https://img.shields.io/badge/GNOME-GTK4%20%2B%20libadwaita-4A86CF?logo=gnome)](https://www.gnome.org/)
+[![Flathub](https://img.shields.io/badge/Flathub-coming%20soon-orange?logo=flathub)](https://flathub.org)
 
-A **GNOME/GTK4 + libadwaita** control panel for the [LNXlink](https://github.com/bkbilly/lnxlink) MQTT agent — the Linux equivalent of HASS.Agent for Windows.
+<div align="center">
 
----
+<img
+    src="flatpak/icons/io.github.lnxlink.automa.svg"
+    alt=""
+    width="128"
+    height="128"
+/>
 
-## Features
+# Automa
 
-| Section | What it does |
-|---|---|
-| **Dashboard** | Shows `lnxlink.service` status (Running / Stopped / Failed) with Start / Stop / Restart buttons and a live service log. |
-| **MQTT Config** | Edits broker host, port, credentials and discovery prefix directly in `config.yaml`. |
-| **Sensors** | Toggles hardware/desktop sensor modules on or off via the `modules.exclude` list in the YAML. |
-| **Commands** | Full CRUD interface for `custom_commands` — add Bash scripts that Home Assistant can trigger. |
-| **System Tray** | Lives in the StatusNotifier tray; closing the window hides it rather than quitting. |
+</div>
 
----
+Automa is a GTK4/libadwaita control panel for [LNXlink](https://github.com/bkbilly/lnxlink), the MQTT agent that integrates your Linux desktop with [Home Assistant](https://www.home-assistant.io/). No terminal needed — configure everything from a clean GNOME interface.
 
-## Prerequisites
+<div align="center">
+<img
+    src="docs/screenshots/dashboard.png"
+    alt="Automa dashboard showing service status and controls"
+    width="800"
+/>
+</div>
 
-### Runtime
-- **LNXlink** installed separately (e.g. via pip or your distro's package manager).
-- A `lnxlink.service` systemd **user** unit (LNXlink creates this automatically on first run with `--service install`).
-- GNOME desktop with Wayland or X11.
+Highlights:
 
-### Python dependencies (outside Flatpak)
-```bash
-# Fedora / RHEL
+* Start, stop and restart the LNXlink service with a single click
+* Configure your MQTT broker connection (host, port, credentials)
+* Enable or disable individual sensors — CPU, memory, camera, bluetooth, and more
+* Create custom commands triggerable from Home Assistant automations
+* Set the device name shown in Home Assistant
+* Configure autostart on login for both the app and the service
+* Follows GNOME accent color and dark/light theme automatically
+* Includes a GNOME Shell extension with a top bar status indicator
+
+## Installation
+
+### From source
+
+Make sure you have the required dependencies:
+
+**Fedora:**
+```sh
 sudo dnf install python3-gobject gtk4 libadwaita python3-pip
-
-# Debian / Ubuntu
-sudo apt install python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 python3-pip
-
-# AppIndicator (optional, for system tray)
-# Fedora:
-sudo dnf install libayatana-appindicator-gtk3
-
-pip install ruamel.yaml
+pip install --user ruamel.yaml babel
 ```
 
----
+**Ubuntu / Debian:**
+```sh
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1 python3-pip
+pip install --user ruamel.yaml babel
+```
 
-## Running (Development / Without Flatpak)
+**Arch Linux:**
+```sh
+sudo pacman -S python-gobject gtk4 libadwaita python-pip
+pip install --user ruamel.yaml babel
+```
 
-```bash
-git clone <this-repo>
-cd lnxlink-gui
-pip install ruamel.yaml
+Then clone and run:
+
+```sh
+git clone https://github.com/ro2342/automa.git
+cd automa
 python3 main.py
 ```
 
----
+On the first run, the app will detect if LNXlink is installed and offer to install it automatically.
 
-## Building & Installing as Flatpak
+### GNOME Shell Extension
 
-### 1. Install build tools
-```bash
-flatpak install flathub org.gnome.Platform//46 org.gnome.Sdk//46
-sudo dnf install flatpak-builder   # or apt install flatpak-builder
+Automa includes a Shell extension that adds a status indicator to the top bar. It shows the service status in real time — green when running, yellow when stopped, red if failed — with quick Start / Stop / Restart controls.
+
+```sh
+cp -r gnome-extension/automa@automa.github.io \
+      ~/.local/share/gnome-shell/extensions/
+
+gnome-extensions enable automa@automa.github.io
 ```
 
-### 2. Fix source checksums
-Before building, update the `sha256` fields in `io.github.lnxlink.automa.json`
-for `ruamel.yaml`, `ruamel.yaml.clib`, and `libayatana-appindicator` by
-downloading the tarballs and running `sha256sum` on them.
+On Wayland, log out and back in to activate the extension.
 
-### 3. Build
-```bash
-flatpak-builder --user --install --force-clean build-dir io.github.lnxlink.automa.json
+## Screenshots
+
+<div align="center">
+<img
+    src="docs/screenshots/sensors.png"
+    alt="Sensors page"
+    width="49%"
+/>
+<img
+    src="docs/screenshots/mqtt.png"
+    alt="MQTT configuration page"
+    width="49%"
+/>
+</div>
+
+## Contributing
+
+### Translations
+
+Automa uses GNU gettext for translations. Currently available: **English** and **Português (Brasil)**.
+
+To contribute a new language:
+
+```sh
+msginit -i locale/automa-gui.pot -l es -o locale/es/LC_MESSAGES/automa-gui.po
+# Edit the .po file with your translations
+# The app will compile it automatically on the next run
 ```
 
-### 4. Run
-```bash
-flatpak run io.github.lnxlink.automa
-```
+Open a pull request with your `.po` file — all contributions are welcome!
 
----
+### Bugs and feature requests
 
-## Flatpak Sandbox — How systemctl Access Works
+Please open an issue on [GitHub](https://github.com/ro2342/automa/issues).
 
-The Flatpak sandbox normally prevents direct access to the host's systemd
-session. This app escapes the sandbox using **two complementary mechanisms**:
+## Code of Conduct
 
-### Option A — `flatpak-spawn --host` (used by default)
-All `systemctl --user …` calls in `service_manager.py` are prefixed with
-`flatpak-spawn --host` when the `FLATPAK_ID` environment variable is set.
-This executes the command on the **host system** outside the sandbox.
-
-**Required manifest permission:**
-```json
-"--talk-name=org.freedesktop.Flatpak"
-```
-
-### Option B — DBus `org.freedesktop.systemd1`
-The systemd DBus API is exposed through the sandbox via:
-```json
-"--talk-name=org.freedesktop.systemd1"
-```
-This is a more targeted approach (included in the manifest as a fallback).
-
-### Config file access
-```json
-"--filesystem=~/.config/lnxlink:rw"
-```
-Grants read/write access to the LNXlink config directory only —
-following the principle of least privilege.
-
----
-
-## File Structure
-
-```
-lnxlink-gui/
-├── main.py                          # App entry point, window, tray
-├── config_manager.py                # YAML read/write with ruamel.yaml
-├── service_manager.py               # systemctl wrapper + Flatpak escape
-├── pages/
-│   ├── __init__.py
-│   ├── dashboard.py                 # Service status & control
-│   ├── mqtt_config.py               # MQTT broker settings form
-│   ├── sensors.py                   # Sensor module toggles
-│   └── commands.py                  # Custom commands CRUD
-├── data/
-│   ├── lnxlink-gui.sh               # Flatpak launcher script
-│   ├── io.github.lnxlink.automa.desktop
-│   ├── io.github.lnxlink.automa.metainfo.xml
-│   └── icons/hicolor/scalable/apps/
-│       └── io.github.lnxlink.automa.svg
-└── io.github.lnxlink.automa.json      # Flatpak manifest
-```
-
----
+Automa follows the [GNOME Code of Conduct](https://conduct.gnome.org/).
 
 ## License
 
-GPL-3.0-or-later
+Automa is licensed under the [GPL-3.0](LICENSE).
