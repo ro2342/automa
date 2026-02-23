@@ -1,0 +1,8 @@
+{
+  "name": "Automa",
+  "description": "Quick access to Automa — shows LNXlink service status in the top bar with start/stop/restart controls.",
+  "uuid": "automa@automa.github.io",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "version": 1,
+  "url": "https://github.com/seu-usuario/automa-gui"
+}

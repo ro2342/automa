@@ -1,0 +1,15 @@
+/* Automa GNOME Shell Extension */
+
+.automa-menu-title {
+    font-weight: bold;
+}
+
+/* 
+  O ícone simbólico usa currentColor.
+  O GNOME aplica a cor do tema automaticamente (branco no dark, escuro no light).
+  Aqui só sobrescrevemos a cor para indicar o status do serviço.
+*/
+.automa-running { color: #57e389; }
+.automa-stopped { color: #f8c43d; }
+.automa-failed  { color: #e01b24; }
+.automa-unknown { /* usa a cor padrão do tema */ }
