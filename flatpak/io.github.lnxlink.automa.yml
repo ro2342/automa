@@ -1,6 +1,6 @@
 app-id: io.github.lnxlink.automa
 runtime: org.gnome.Platform
-runtime-version: '48'
+runtime-version: '49'
 sdk: org.gnome.Sdk
 command: automa
 
@@ -9,14 +9,11 @@ finish-args:
   - --socket=fallback-x11
   - --share=ipc
   - --share=network
-  - --filesystem=home
-  # Controla lnxlink.service via DBus
+  - --filesystem=~/.config/lnxlink:rw
+  - --filesystem=~/.config/autostart:rw
   - --talk-name=org.freedesktop.systemd1
-  # Executa systemctl no host via flatpak-spawn
   - --talk-name=org.freedesktop.Flatpak
   - --talk-name=org.freedesktop.Notifications
-  - --filesystem=xdg-data/themes:ro
-  - --filesystem=xdg-config/gtk-4.0:ro
 
 modules:
   - name: python3-ruamel-yaml
@@ -54,4 +51,4 @@ modules:
       - type: git
         url: https://github.com/ro2342/automa.git
         tag: v1.0.0
-        commit: 957a581662ce324cbdb7f64a217e7bef8f7ceba5
+        commit: HASH_PLACEHOLDER
