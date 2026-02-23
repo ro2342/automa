@@ -46,8 +46,8 @@ from pages.settings import SettingsPage, apply_theme
 from pages.welcome import WelcomePage
 from css_loader import load_css
 
-APP_ID      = "io.github.lnxlink.gui"
-APP_NAME    = "LNXlink GUI"
+APP_ID      = "io.github.lnxlink.automa"
+APP_NAME    = "Automa"
 APP_VERSION = "1.0.0"
 
 logging.basicConfig(level=logging.INFO,
