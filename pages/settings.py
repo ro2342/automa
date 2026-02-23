@@ -6,6 +6,7 @@ Todas as strings via i18n._().
 import shutil
 import json
 import subprocess
+import os
 from pathlib import Path
 
 import gi
@@ -24,7 +25,7 @@ GUI_DESKTOP   = """\
 Name=Automa
 Comment=LNXlink MQTT Agent Control Panel
 Exec=python3 {script_path}
-Icon=io.github.lnxlink.automa
+Icon=io.github.lnxlink.gui
 Terminal=false
 Type=Application
 X-GNOME-Autostart-enabled=true
@@ -66,9 +67,16 @@ def set_gui_autostart(enabled: bool):
         GUI_AUTOSTART.unlink(missing_ok=True)
 
 
+def _sys_cmd(args: list) -> list:
+    """Prefixa com flatpak-spawn --host se estiver dentro do Flatpak."""
+    if os.environ.get("FLATPAK_ID"):
+        return ["flatpak-spawn", "--host"] + args
+    return args
+
+
 def is_lnxlink_service_autostart_enabled() -> bool:
     try:
-        r = subprocess.run(["systemctl", "--user", "is-enabled", "lnxlink.service"],
+        r = subprocess.run(_sys_cmd(["systemctl", "--user", "is-enabled", "lnxlink.service"]),
                            capture_output=True, text=True, timeout=5)
         return r.stdout.strip() == "enabled"
     except Exception:
@@ -301,7 +309,7 @@ class SettingsPage(Gtk.Box):
         _ = i18n._
         try:
             action = "enable" if row.get_active() else "disable"
-            subprocess.run(["systemctl", "--user", action, "lnxlink.service"],
+            subprocess.run(_sys_cmd(["systemctl", "--user", action, "lnxlink.service"]),
                            capture_output=True, timeout=5)
             msg = (_("LNXlink service enabled on startup.") if row.get_active()
                    else _("LNXlink service disabled from startup."))
