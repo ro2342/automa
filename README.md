@@ -5,7 +5,7 @@
 <div align="center">
 
 <img
-    src="flatpak/icons/io.github.lnxlink.automa.svg"
+    src="flatpak/icons/io.github.ro2342.automa.svg"
     alt=""
     width="128"
     height="128"

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.lnxlink.automa</id>
+  <id>io.github.ro2342.automa</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
 
@@ -28,7 +28,7 @@
     </ul>
   </description>
 
-  <launchable type="desktop-id">io.github.lnxlink.automa.desktop</launchable>
+  <launchable type="desktop-id">io.github.ro2342.automa.desktop</launchable>
 
   <url type="homepage">https://github.com/ro2342/automa</url>
   <url type="bugtracker">https://github.com/ro2342/automa/issues</url>
