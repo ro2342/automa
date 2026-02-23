@@ -51,4 +51,4 @@ modules:
       - type: git
         url: https://github.com/ro2342/automa.git
         tag: v1.0.0
-        commit: caaeaa39cae0ffc46fe4945b260c6873b03305b3
+        commit: f51a90cb23fd605de744102696c6f2422bffd3e1
