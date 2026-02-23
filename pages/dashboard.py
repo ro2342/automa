@@ -1,10 +1,6 @@
 """
 pages/dashboard.py - Dashboard: status do serviço e controles.
-
-CORREÇÕES:
-  - refresh_status() SÓ consulta — nunca chama start/stop/enable/disable
-  - autostart toggle usa flag _loading para não disparar ações durante refresh
-  - _on_action_done não chama refresh se foi cancelado
+Todas as strings via i18n._().
 """
 
 import threading
@@ -14,14 +10,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from service_manager import ServiceManager, ServiceStatus
-
-
-STATUS_STYLES = {
-    ServiceStatus.RUNNING: ("●  Running", "service-status-running"),
-    ServiceStatus.STOPPED: ("●  Stopped", "service-status-stopped"),
-    ServiceStatus.FAILED:  ("●  Failed",  "service-status-failed"),
-    ServiceStatus.UNKNOWN: ("●  Unknown", "service-status-unknown"),
-}
+import i18n
 
 
 class DashboardPage(Gtk.Box):
@@ -30,16 +19,13 @@ class DashboardPage(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.service_manager = service_manager
         self._busy    = False
-        self._loading = False  # flag para bloquear handlers durante refresh
-
+        self._loading = False
         self._build_ui()
         self.connect("realize", lambda _: self.refresh_status())
 
-    # ------------------------------------------------------------------ #
-    #  UI                                                                  #
-    # ------------------------------------------------------------------ #
-
     def _build_ui(self):
+        _ = i18n._
+
         clamp = Adw.Clamp(maximum_size=700, tightening_threshold=500)
         clamp.set_margin_top(24)
         clamp.set_margin_bottom(24)
@@ -51,13 +37,13 @@ class DashboardPage(Gtk.Box):
         clamp.set_child(outer)
 
         # ── Status ──────────────────────────────────────────────────
-        status_group = Adw.PreferencesGroup(title="Service Status")
+        status_group = Adw.PreferencesGroup(title=_("Service Status"))
         outer.append(status_group)
 
         status_row = Adw.ActionRow(title="lnxlink.service")
         status_group.add(status_row)
 
-        self.status_label = Gtk.Label(label="● Checking…")
+        self.status_label = Gtk.Label(label=_("● Checking…"))
         self.status_label.set_halign(Gtk.Align.END)
         self.status_label.set_valign(Gtk.Align.CENTER)
         status_row.add_suffix(self.status_label)
@@ -69,7 +55,7 @@ class DashboardPage(Gtk.Box):
         status_row.add_suffix(self.spinner)
 
         # ── Controles ───────────────────────────────────────────────
-        controls_group = Adw.PreferencesGroup(title="Controls")
+        controls_group = Adw.PreferencesGroup(title=_("Controls"))
         outer.append(controls_group)
 
         btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -77,9 +63,9 @@ class DashboardPage(Gtk.Box):
         btn_box.set_margin_top(8)
         btn_box.set_margin_bottom(8)
 
-        self.btn_start   = self._make_btn("Start",   "media-playback-start-symbolic", "suggested-action")
-        self.btn_stop    = self._make_btn("Stop",    "media-playback-stop-symbolic",  "destructive-action")
-        self.btn_restart = self._make_btn("Restart", "view-refresh-symbolic",          "")
+        self.btn_start   = self._make_btn(_("Start"),   "media-playback-start-symbolic", "suggested-action")
+        self.btn_stop    = self._make_btn(_("Stop"),    "media-playback-stop-symbolic",  "destructive-action")
+        self.btn_restart = self._make_btn(_("Restart"), "view-refresh-symbolic",          "")
 
         self.btn_start.connect("clicked",   self._on_start)
         self.btn_stop.connect("clicked",    self._on_stop)
@@ -93,22 +79,20 @@ class DashboardPage(Gtk.Box):
         btn_row.set_child(btn_box)
         controls_group.add(btn_row)
 
-        # Autostart toggle — Start on Login
         self.autostart_row = Adw.SwitchRow(
-            title="Start on Login",
-            subtitle="Enable lnxlink.service as a systemd user unit",
+            title=_("Start on Login"),
+            subtitle=_("Enable lnxlink.service as a systemd user unit"),
         )
         self.autostart_row.connect("notify::active", self._on_autostart_toggled)
         controls_group.add(self.autostart_row)
 
-        # Refresh manual
-        refresh_row = Adw.ActionRow(title="Refresh Status", activatable=True)
+        refresh_row = Adw.ActionRow(title=_("Refresh Status"), activatable=True)
         refresh_row.set_icon_name("view-refresh-symbolic")
         refresh_row.connect("activated", lambda _: self.refresh_status())
         controls_group.add(refresh_row)
 
-        # ── Log de detalhes ─────────────────────────────────────────
-        log_group = Adw.PreferencesGroup(title="Service Detail")
+        # ── Log ─────────────────────────────────────────────────────
+        log_group = Adw.PreferencesGroup(title=_("Service Detail"))
         outer.append(log_group)
 
         scroll = Gtk.ScrolledWindow()
@@ -141,39 +125,37 @@ class DashboardPage(Gtk.Box):
             btn.add_css_class(style)
         return btn
 
-    # ------------------------------------------------------------------ #
-    #  Status refresh (SOMENTE leitura — nunca chama start/stop)          #
-    # ------------------------------------------------------------------ #
-
     def refresh_status(self):
         if self._busy:
             return
         self._set_busy(True)
-        threading.Thread(target=self._fetch_status_thread, daemon=True).start()
+        threading.Thread(target=self._fetch_thread, daemon=True).start()
 
-    def _fetch_status_thread(self):
+    def _fetch_thread(self):
         status  = self.service_manager.get_status()
         detail  = self.service_manager.get_status_text()
         enabled = self.service_manager.is_enabled()
-        GLib.idle_add(self._update_status_ui, status, detail, enabled)
+        GLib.idle_add(self._update_ui, status, detail, enabled)
 
-    def _update_status_ui(self, status, detail, enabled):
-        text, css = STATUS_STYLES[status]
-
+    def _update_ui(self, status, detail, enabled):
+        _ = i18n._
+        labels = {
+            ServiceStatus.RUNNING: (_("● Running"), "service-status-running"),
+            ServiceStatus.STOPPED: (_("● Stopped"), "service-status-stopped"),
+            ServiceStatus.FAILED:  (_("● Failed"),  "service-status-failed"),
+            ServiceStatus.UNKNOWN: (_("● Unknown"), "service-status-unknown"),
+        }
+        text, css = labels[status]
         for cls in ("service-status-running", "service-status-stopped",
                     "service-status-failed", "service-status-unknown"):
             self.status_label.remove_css_class(cls)
-
         self.status_label.set_label(text)
         self.status_label.add_css_class(css)
-
         self.log_view.get_buffer().set_text(detail)
 
-        # Atualiza o toggle de autostart SEM disparar _on_autostart_toggled
         self._loading = True
         self.autostart_row.set_active(enabled)
         self._loading = False
-
         self._set_busy(False)
         return GLib.SOURCE_REMOVE
 
@@ -184,51 +166,22 @@ class DashboardPage(Gtk.Box):
         for btn in (self.btn_start, self.btn_stop, self.btn_restart):
             GLib.idle_add(btn.set_sensitive, not busy)
 
-    # ------------------------------------------------------------------ #
-    #  Botões de controle                                                  #
-    # ------------------------------------------------------------------ #
+    def _on_start(self, _):   self._dispatch(self.service_manager.start,   "Start")
+    def _on_stop(self, _):    self._dispatch(self.service_manager.stop,    "Stop")
+    def _on_restart(self, _): self._dispatch(self.service_manager.restart, "Restart")
 
-    def _on_start(self, _btn):
-        self._dispatch(self.service_manager.start, "Start")
-
-    def _on_stop(self, _btn):
-        self._dispatch(self.service_manager.stop, "Stop")
-
-    def _on_restart(self, _btn):
-        self._dispatch(self.service_manager.restart, "Restart")
-
-    def _dispatch(self, action_fn, name):
-        if self._busy:
-            return
+    def _dispatch(self, fn, name):
+        if self._busy: return
         self._set_busy(True)
+        threading.Thread(target=lambda: GLib.idle_add(
+            self._on_done, *fn(), name), daemon=True).start()
 
-        def _thread():
-            success, msg = action_fn()
-            GLib.idle_add(self._on_action_done, success, msg, name)
-
-        threading.Thread(target=_thread, daemon=True).start()
-
-    def _on_action_done(self, success, msg, name):
-        import logging
-        logging.getLogger(__name__).info("%s %s: %s",
-            name, "succeeded" if success else "failed", msg or "")
+    def _on_done(self, success, msg, name):
         self._set_busy(False)
-        # Aguarda um pouco para o serviço estabilizar antes de verificar status
-        GLib.timeout_add(800, self._delayed_refresh)
+        GLib.timeout_add(800, lambda: (self.refresh_status(), GLib.SOURCE_REMOVE)[1])
         return GLib.SOURCE_REMOVE
 
-    def _delayed_refresh(self):
-        self.refresh_status()
-        return GLib.SOURCE_REMOVE
-
-    # ------------------------------------------------------------------ #
-    #  Autostart toggle                                                    #
-    # ------------------------------------------------------------------ #
-
-    def _on_autostart_toggled(self, row, _param):
-        # Ignora durante refresh — evita loop de enable/disable
-        if self._loading or self._busy:
-            return
-        enabled = row.get_active()
-        action = self.service_manager.enable if enabled else self.service_manager.disable
-        self._dispatch(action, "Enable" if enabled else "Disable")
+    def _on_autostart_toggled(self, row, _):
+        if self._loading or self._busy: return
+        fn = self.service_manager.enable if row.get_active() else self.service_manager.disable
+        self._dispatch(fn, "autostart")

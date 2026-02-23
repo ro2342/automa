@@ -1,15 +1,19 @@
 """
-pages/sensors.py - Habilita/desabilita módulos do LNXlink via toggles.
+pages/sensors.py - Sensores. Todas as strings via i18n._().
+Auto-restart ao toggle com debounce de 1.5s.
 """
 
+import threading
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from config_manager import ConfigManager
+import i18n
 
-
+# Módulos: chave → (nome_i18n_key, desc_i18n_key, categoria)
+# Usamos keys fixas e traduzimos na hora para suportar troca de idioma
 MODULES = {
     "bash":          ("Bash Commands",   "Run custom bash scripts from HA",                          "supported"),
     "bluetooth":     ("Bluetooth",       "Connected bluetooth devices",                               "supported"),
@@ -45,7 +49,6 @@ GROUPS = {
     "Connectivity": ["network", "bluetooth"],
     "Automation":   ["bash", "camera_used"],
 }
-
 ADVANCED_KEYS = ["webcam", "wifi", "wol", "docker", "steam"]
 
 
@@ -56,15 +59,13 @@ class SensorsPage(Gtk.Box):
         self.config_manager  = config_manager
         self.service_manager = service_manager
         self._rows: dict[str, Adw.SwitchRow] = {}
-        self._dirty = False
+        self._loading       = False
+        self._restart_timer = None
         self._build_ui()
         self.connect("realize", lambda _: self._load_values())
 
-    # ------------------------------------------------------------------ #
-    #  UI                                                                  #
-    # ------------------------------------------------------------------ #
-
     def _build_ui(self):
+        _ = i18n._
         scroll = Gtk.ScrolledWindow(vexpand=True)
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.append(scroll)
@@ -76,145 +77,137 @@ class SensorsPage(Gtk.Box):
         clamp.set_margin_end(12)
         scroll.set_child(clamp)
 
-        self._outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-        clamp.set_child(self._outer)
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        clamp.set_child(outer)
 
-        # Descrição discreta (sem banner azul)
-        hint = Gtk.Label(
-            label="Toggle sensors to enable or disable them. Changes require saving and restarting the service."
-        )
+        hint = Gtk.Label(label=_("Changes are saved and applied automatically."))
         hint.set_halign(Gtk.Align.START)
         hint.set_wrap(True)
         hint.add_css_class("dim-label")
         hint.add_css_class("caption")
-        self._outer.append(hint)
+        outer.append(hint)
 
-        # Botões rápidos + Restart (aparece só quando há mudanças)
-        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        action_bar.set_halign(Gtk.Align.END)
+        # Status spinner discreto
+        self._status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self._status_box.set_halign(Gtk.Align.END)
+        self._status_box.set_visible(False)
+        self._status_spinner = Gtk.Spinner()
+        self._status_spinner.set_spinning(True)
+        self._status_box.append(self._status_spinner)
+        self._status_label = Gtk.Label()
+        self._status_label.add_css_class("dim-label")
+        self._status_label.add_css_class("caption")
+        self._status_box.append(self._status_label)
+        outer.append(self._status_box)
 
-        btn_all  = Gtk.Button(label="Enable All")
-        btn_none = Gtk.Button(label="Disable All")
-        btn_all.connect("clicked",  lambda _: self._set_all(True))
-        btn_none.connect("clicked", lambda _: self._set_all(False))
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        btn_box.set_halign(Gtk.Align.END)
+        btn_all  = Gtk.Button(label=_("Enable All"))
+        btn_none = Gtk.Button(label=_("Disable All"))
         btn_all.add_css_class("flat")
         btn_none.add_css_class("flat")
-        action_bar.append(btn_all)
-        action_bar.append(btn_none)
+        btn_all.connect("clicked",  lambda _: self._set_all(True))
+        btn_none.connect("clicked", lambda _: self._set_all(False))
+        btn_box.append(btn_all)
+        btn_box.append(btn_none)
+        outer.append(btn_box)
 
-        # Separador visual
-        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        sep.set_margin_start(4)
-        sep.set_margin_end(4)
-        action_bar.append(sep)
-
-        self.restart_btn = Gtk.Button(label="Save & Restart")
-        self.restart_btn.add_css_class("suggested-action")
-        self.restart_btn.set_icon_name("view-refresh-symbolic")
-        self.restart_btn.set_visible(False)
-        self.restart_btn.connect("clicked", self._on_save_restart)
-        action_bar.append(self.restart_btn)
-
-        self._outer.append(action_bar)
-
-        # Grupos normais
         placed: set[str] = set()
         for group_name, keys in GROUPS.items():
-            group = Adw.PreferencesGroup(title=group_name)
-            self._outer.append(group)
+            group = Adw.PreferencesGroup(title=_(group_name))
+            outer.append(group)
             for key in keys:
                 if key in MODULES:
                     self._add_row(group, key)
                     placed.add(key)
 
-        # Grupo Advanced como ExpanderRow dentro de um PreferencesGroup
-        advanced_group = Adw.PreferencesGroup()
-        self._outer.append(advanced_group)
-
+        adv_group = Adw.PreferencesGroup()
+        outer.append(adv_group)
         self._expander = Adw.ExpanderRow(
-            title="Advanced",
-            subtitle="Modules that may require extra configuration",
+            title=_("Advanced"),
+            subtitle=_("Modules that may require extra configuration — disabled by default"),
         )
         self._expander.set_expanded(False)
-        advanced_group.add(self._expander)
-
+        adv_group.add(self._expander)
         for key in ADVANCED_KEYS:
             if key in MODULES:
-                row = self._make_switch_row(key)
+                row = self._make_row(key)
                 self._expander.add_row(row)
                 self._rows[key] = row
                 placed.add(key)
 
-        # Restantes não categorizados
         remaining = [k for k in MODULES if k not in placed]
         if remaining:
-            other = Adw.PreferencesGroup(title="Other")
-            self._outer.append(other)
+            other = Adw.PreferencesGroup(title=_("Other"))
+            outer.append(other)
             for key in remaining:
                 self._add_row(other, key)
 
-    def _make_switch_row(self, key: str) -> Adw.SwitchRow:
-        name, desc, category = MODULES[key]
-        row = Adw.SwitchRow(title=name, subtitle=desc)
+    def _make_row(self, key: str) -> Adw.SwitchRow:
+        _ = i18n._
+        name, desc, _cat = MODULES[key]
+        row = Adw.SwitchRow(title=_(name), subtitle=_(desc))
         row.set_active(key not in DEFAULT_EXCLUDED)
-        row.connect("notify::active", self._on_toggle_changed)
+        row.connect("notify::active", self._on_toggle)
         return row
 
-    def _add_row(self, group: Adw.PreferencesGroup, key: str):
-        row = self._make_switch_row(key)
+    def _add_row(self, group, key):
+        row = self._make_row(key)
         group.add(row)
         self._rows[key] = row
 
-    # ------------------------------------------------------------------ #
-    #  Data binding                                                        #
-    # ------------------------------------------------------------------ #
-
     def _load_values(self):
+        self._loading = True
         excluded = self.config_manager.get_excluded_modules()
         for key, row in self._rows.items():
-            # Bloqueia o signal durante o load para não marcar como dirty
-            row.handler_block_by_func(self._on_toggle_changed)
-            if key in excluded:
-                row.set_active(False)
-            elif key in DEFAULT_EXCLUDED:
-                row.set_active(False)
-            else:
-                row.set_active(True)
-            row.handler_unblock_by_func(self._on_toggle_changed)
-        self._set_dirty(False)
-
-    def _on_toggle_changed(self, *_):
-        self._set_dirty(True)
-
-    def _set_dirty(self, dirty: bool):
-        self._dirty = dirty
-        self.restart_btn.set_visible(dirty)
+            row.set_active(key not in excluded)
+        self._loading = False
 
     def _set_all(self, enabled: bool):
+        self._loading = True
         for row in self._rows.values():
             row.set_active(enabled)
+        self._loading = False
+        self._schedule_restart()
 
-    # ------------------------------------------------------------------ #
-    #  Save & Restart                                                      #
-    # ------------------------------------------------------------------ #
+    def _on_toggle(self, *_):
+        if self._loading:
+            return
+        self._schedule_restart()
 
-    def _on_save_restart(self, _btn):
+    def _schedule_restart(self):
+        _ = i18n._
+        if self._restart_timer is not None:
+            GLib.source_remove(self._restart_timer)
+        self._show_status(_("Saving…"))
+        self._restart_timer = GLib.timeout_add(1500, self._apply)
+
+    def _apply(self):
+        _ = i18n._
+        self._restart_timer = None
+        self._show_status(_("Applying…"))
         self.apply_to_config()
         self.config_manager.save()
         if self.service_manager:
-            self.service_manager.restart()
-        self._set_dirty(False)
-        # Feedback visual
-        self.restart_btn.set_label("Restarting…")
-        self.restart_btn.set_sensitive(False)
-        GLib.timeout_add(2500, self._on_restart_done)
+            threading.Thread(target=self._restart_thread, daemon=True).start()
+        else:
+            self._show_status(_("Saved ✓"), done=True)
+        return GLib.SOURCE_REMOVE
 
-    def _on_restart_done(self):
-        self.restart_btn.set_label("Save & Restart")
-        self.restart_btn.set_sensitive(True)
-        self.restart_btn.set_visible(False)
+    def _restart_thread(self):
+        _ = i18n._
+        self.service_manager.restart()
+        GLib.idle_add(self._show_status, _("Applied ✓"), True)
+
+    def _show_status(self, msg, done=False):
+        self._status_box.set_visible(True)
+        self._status_label.set_label(msg)
+        self._status_spinner.set_visible(not done)
+        self._status_spinner.set_spinning(not done)
+        if done:
+            GLib.timeout_add(2000, lambda: (self._status_box.set_visible(False), GLib.SOURCE_REMOVE)[1])
         return GLib.SOURCE_REMOVE
 
     def apply_to_config(self):
-        excluded = [key for key, row in self._rows.items() if not row.get_active()]
+        excluded = [k for k, row in self._rows.items() if not row.get_active()]
         self.config_manager.set_excluded_modules(excluded)

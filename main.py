@@ -27,13 +27,11 @@ except (ValueError, ImportError):
     except (ValueError, ImportError):
         HAS_INDICATOR = False
 
-# i18n: inicializa ANTES de qualquer widget, mas DEPOIS dos imports gi
 import i18n
-from pages.settings import load_prefs
+from pages.settings import load_prefs, apply_theme
 
 _prefs = load_prefs()
 i18n.setup(_prefs.get("language", "system"))
-# NOTA: apply_theme() é chamado em do_startup(), após o Adw.Application existir
 
 from config_manager import ConfigManager
 from service_manager import ServiceManager
@@ -42,17 +40,26 @@ from pages.dashboard import DashboardPage
 from pages.mqtt_config import MqttConfigPage
 from pages.sensors import SensorsPage
 from pages.commands import CommandsPage
-from pages.settings import SettingsPage, apply_theme
+from pages.settings import SettingsPage
 from pages.welcome import WelcomePage
 from css_loader import load_css
 
-APP_ID      = "io.github.lnxlink.automa"
+APP_ID      = "io.github.lnxlink.gui"
 APP_NAME    = "Automa"
 APP_VERSION = "1.0.0"
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 log = logging.getLogger(__name__)
+
+# Nomes das páginas para o título contextual do header
+PAGE_TITLES = {
+    "dashboard": "Dashboard",
+    "mqtt":      "MQTT Config",
+    "sensors":   "Sensors",
+    "commands":  "Commands",
+    "settings":  "Settings",
+}
 
 
 class LNXlinkWindow(Adw.ApplicationWindow):
@@ -64,6 +71,7 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         self.config_manager  = ConfigManager()
         self.service_manager = ServiceManager()
         self._toast_overlay  = None
+        self._current_page   = "dashboard"
         self._build_ui()
         self._connect_signals()
         if not is_lnxlink_installed():
@@ -72,7 +80,7 @@ class LNXlinkWindow(Adw.ApplicationWindow):
             self.config_manager.load()
 
     # ------------------------------------------------------------------ #
-    #  UI                                                                  #
+    #  UI — estrutura moderna GNOME (sem título no header, menu hamburguer)
     # ------------------------------------------------------------------ #
 
     def _build_ui(self):
@@ -81,38 +89,20 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         self._toast_overlay = Adw.ToastOverlay()
         self.set_content(self._toast_overlay)
 
-        toolbar_view = Adw.ToolbarView()
-        self._toast_overlay.set_child(toolbar_view)
-
-        header = Adw.HeaderBar()
-        header.set_title_widget(
-            Adw.WindowTitle(title=APP_NAME,
-                            subtitle=_("MQTT Agent Control Panel"))
-        )
-        toolbar_view.add_top_bar(header)
-
-        about_btn = Gtk.Button(icon_name="help-about-symbolic")
-        about_btn.set_tooltip_text(_("About"))
-        about_btn.connect("clicked", self._on_about)
-        header.pack_end(about_btn)
-
-        self.save_btn = Gtk.Button(label=_("Save Config"))
-        self.save_btn.add_css_class("suggested-action")
-        self.save_btn.connect("clicked", self._on_save_config)
-        header.pack_end(self.save_btn)
-
-        self.split_view = Adw.NavigationSplitView()
+        # OverlaySplitView: sidebar sobreposta em mobile, fixa em desktop
+        self.split_view = Adw.OverlaySplitView()
         self.split_view.set_min_sidebar_width(200)
         self.split_view.set_max_sidebar_width(260)
-        toolbar_view.set_content(self.split_view)
+        self.split_view.set_sidebar_width_fraction(0.25)
+        self._toast_overlay.set_child(self.split_view)
 
-        # Sidebar
-        sidebar_nav      = Adw.NavigationPage(title="Navigation")
-        sidebar_toolbar  = Adw.ToolbarView()
-        sidebar_bar      = Adw.HeaderBar()
+        # ── Sidebar ──────────────────────────────────────────────────
+        sidebar_toolbar = Adw.ToolbarView()
+        sidebar_bar     = Adw.HeaderBar()
         sidebar_bar.set_show_end_title_buttons(False)
+        # Nome do app na sidebar (padrão GNOME moderno)
+        sidebar_bar.set_title_widget(Gtk.Label(label=APP_NAME))
         sidebar_toolbar.add_top_bar(sidebar_bar)
-        sidebar_nav.set_child(sidebar_toolbar)
 
         self.list_box = Gtk.ListBox()
         self.list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
@@ -134,19 +124,49 @@ class LNXlinkWindow(Adw.ApplicationWindow):
             row.set_activatable(True)
             self.list_box.append(row)
 
-        scroll = Gtk.ScrolledWindow(vexpand=True)
-        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll.set_child(self.list_box)
-        sidebar_toolbar.set_content(scroll)
-        self.split_view.set_sidebar(sidebar_nav)
+        sidebar_scroll = Gtk.ScrolledWindow(vexpand=True)
+        sidebar_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        sidebar_scroll.set_child(self.list_box)
+        sidebar_toolbar.set_content(sidebar_scroll)
+        self.split_view.set_sidebar(sidebar_toolbar)
 
-        # Stack de conteúdo
-        content_nav = Adw.NavigationPage(title="Content")
-        self.stack  = Gtk.Stack()
+        # ── Conteúdo ─────────────────────────────────────────────────
+        content_toolbar = Adw.ToolbarView()
+
+        # Header do conteúdo — título contextual + menu hamburguer
+        content_bar = Adw.HeaderBar()
+        content_bar.set_show_start_title_buttons(False)
+
+        # Botão hamburguer (abre sidebar em modo mobile / tela pequena)
+        toggle_btn = Gtk.ToggleButton(icon_name="sidebar-show-symbolic")
+        toggle_btn.set_tooltip_text("Toggle Sidebar")
+        toggle_btn.set_active(True)
+        toggle_btn.connect("toggled", lambda btn: self.split_view.set_show_sidebar(btn.get_active()))
+        content_bar.pack_start(toggle_btn)
+
+        # Título contextual que muda conforme a página
+        self._page_title = Adw.WindowTitle(title="Dashboard", subtitle="Automa")
+        content_bar.set_title_widget(self._page_title)
+
+        # Menu ☰ (kebab/hamburger menu) no canto direito
+        menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic")
+        menu_btn.set_tooltip_text("Menu")
+        menu = Gio.Menu()
+        menu.append(_("Save Config"), "win.save_config")
+        menu.append(_("About"),       "win.about")
+        menu.append(_("Quit"),        "app.quit")
+        menu_btn.set_menu_model(menu)
+        content_bar.pack_end(menu_btn)
+
+        content_toolbar.add_top_bar(content_bar)
+
+        # Stack de páginas
+        self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        content_nav.set_child(self.stack)
-        self.split_view.set_content(content_nav)
+        content_toolbar.set_content(self.stack)
+        self.split_view.set_content(content_toolbar)
 
+        # Instancia as páginas
         self.dashboard_page = DashboardPage(self.service_manager)
         self.mqtt_page      = MqttConfigPage(self.config_manager)
         self.sensors_page   = SensorsPage(self.config_manager,
@@ -163,13 +183,27 @@ class LNXlinkWindow(Adw.ApplicationWindow):
 
         self.list_box.select_row(self.list_box.get_row_at_index(0))
 
+        # Actions da janela para o menu
+        self._setup_window_actions()
+
+    def _setup_window_actions(self):
+        _ = i18n._
+
+        save_action = Gio.SimpleAction.new("save_config", None)
+        save_action.connect("activate", lambda *_: self._on_save_config())
+        self.add_action(save_action)
+
+        about_action = Gio.SimpleAction.new("about", None)
+        about_action.connect("activate", lambda *_: self._on_about())
+        self.add_action(about_action)
+
     # ------------------------------------------------------------------ #
     #  Welcome dialog                                                      #
     # ------------------------------------------------------------------ #
 
     def _show_welcome(self):
         self._welcome_dialog = Adw.Dialog()
-        self._welcome_dialog.set_title("Configuração Inicial")
+        self._welcome_dialog.set_title("Initial Setup")
         self._welcome_dialog.set_content_width(600)
         self._welcome_dialog.set_content_height(700)
         welcome = WelcomePage(
@@ -182,7 +216,6 @@ class LNXlinkWindow(Adw.ApplicationWindow):
     def _on_lnxlink_installed(self):
         self._welcome_dialog.close()
         self.config_manager.load()
-        # Atualiza dashboard
         self.dashboard_page.refresh_status()
 
     # ------------------------------------------------------------------ #
@@ -198,18 +231,23 @@ class LNXlinkWindow(Adw.ApplicationWindow):
             return
         pages = ["dashboard", "mqtt", "sensors", "commands", "settings"]
         name  = pages[row.get_index()]
+        self._current_page = name
         self.stack.set_visible_child_name(name)
+        # Atualiza título contextual do header
+        self._page_title.set_title(PAGE_TITLES.get(name, APP_NAME))
         if name == "dashboard":
             self.dashboard_page.refresh_status()
 
-    def _on_save_config(self, _btn):
+    def _on_save_config(self):
         _ = i18n._
         try:
             self.mqtt_page.apply_to_config()
             self.sensors_page.apply_to_config()
             self.commands_page.apply_to_config()
             self.config_manager.save()
-            self._show_toast(_("Configuration saved successfully!"))
+            self.service_manager.restart()
+            self._show_toast(_("Configuration saved and service restarted!"))
+            GLib.timeout_add(2000, lambda: (self.dashboard_page.refresh_status(), GLib.SOURCE_REMOVE)[1])
         except Exception as exc:
             self._show_toast(
                 _("Error saving config: {error}").format(error=exc),
@@ -222,7 +260,7 @@ class LNXlinkWindow(Adw.ApplicationWindow):
             return True
         return False
 
-    def _on_about(self, _btn):
+    def _on_about(self):
         Adw.AboutWindow(
             transient_for=self,
             application_name=APP_NAME,
@@ -249,9 +287,7 @@ class LNXlinkApp(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
-        # Tema aplicado AQUI — após Adw.Application existir, antes da janela
         apply_theme(_prefs.get("theme", "system"))
-        # CSS customizado — accent colors + dark/light variants
         load_css()
 
         quit_action = Gio.SimpleAction.new("quit", None)

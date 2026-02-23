@@ -325,3 +325,243 @@ msgstr "Verificando instalação..."
 
 msgid "LNXlink installed successfully! ✓"
 msgstr "LNXlink instalado com sucesso! ✓"
+
+msgid "Device"
+msgstr "Dispositivo"
+
+msgid "Name shown in Home Assistant for this machine."
+msgstr "Nome exibido no Home Assistant para esta máquina."
+
+msgid "Device Name"
+msgstr "Nome do Dispositivo"
+
+msgid "Save"
+msgstr "Salvar"
+
+msgid "After changing, restart the LNXlink service for it to take effect."
+msgstr "Após mudar, reinicie o serviço LNXlink para aplicar."
+
+msgid "Automa"
+msgstr "Automa"
+
+msgid "Start this control panel on login (~/.config/autostart)"
+msgstr "Iniciar este painel de controle ao fazer login (~/.config/autostart)"
+
+msgid "LNXlink Service"
+msgstr "Serviço LNXlink"
+
+msgid "Start lnxlink.service on login (systemctl --user enable)"
+msgstr "Iniciar lnxlink.service ao fazer login (systemctl --user enable)"
+
+msgid "Configure which components start automatically when you log in."
+msgstr "Configure quais componentes iniciam automaticamente ao fazer login."
+
+msgid "Startup"
+msgstr "Inicialização"
+
+msgid "MQTT Broker"
+msgstr "Broker MQTT"
+
+msgid "Checking connection…"
+msgstr "Verificando conexão…"
+
+msgid "Connected ✓"
+msgstr "Conectado ✓"
+
+msgid "Unreachable — check broker host and port"
+msgstr "Inacessível — verifique o host e a porta do broker"
+
+msgid "Automa will start on login."
+msgstr "Automa vai iniciar ao fazer login."
+
+msgid "Automa removed from startup."
+msgstr "Automa removido da inicialização."
+
+msgid "LNXlink service enabled on startup."
+msgstr "Serviço LNXlink habilitado na inicialização."
+
+msgid "LNXlink service disabled from startup."
+msgstr "Serviço LNXlink desabilitado da inicialização."
+
+msgid "Device name saved. Restart the service to apply."
+msgstr "Nome do dispositivo salvo. Reinicie o serviço para aplicar."
+
+msgid "Changes are saved and applied automatically."
+msgstr "As alterações são salvas e aplicadas automaticamente."
+
+msgid "Enable All"
+msgstr "Habilitar Todos"
+
+msgid "Disable All"
+msgstr "Desabilitar Todos"
+
+msgid "Advanced"
+msgstr "Avançado"
+
+msgid "Modules that may require extra configuration — disabled by default"
+msgstr "Módulos que podem precisar de configuração extra — desabilitados por padrão"
+
+msgid "Other"
+msgstr "Outros"
+
+msgid "Saving…"
+msgstr "Salvando…"
+
+msgid "Applying…"
+msgstr "Aplicando…"
+
+msgid "Applied ✓"
+msgstr "Aplicado ✓"
+
+msgid "Service Status"
+msgstr "Status do Serviço"
+
+msgid "Controls"
+msgstr "Controles"
+
+msgid "Service Detail"
+msgstr "Detalhe do Serviço"
+
+msgid "● Checking…"
+msgstr "● Verificando…"
+
+msgid "● Running"
+msgstr "● Rodando"
+
+msgid "● Stopped"
+msgstr "● Parado"
+
+msgid "● Failed"
+msgstr "● Falhou"
+
+msgid "● Unknown"
+msgstr "● Desconhecido"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Stop"
+msgstr "Parar"
+
+msgid "Restart"
+msgstr "Reiniciar"
+
+msgid "Start on Login"
+msgstr "Iniciar com o Login"
+
+msgid "Enable lnxlink.service as a systemd user unit"
+msgstr "Habilitar lnxlink.service como unidade systemd do usuário"
+
+msgid "Refresh Status"
+msgstr "Atualizar Status"
+
+msgid "Broker Connection"
+msgstr "Conexão com o Broker"
+
+msgid "Connect to your MQTT broker (e.g., Mosquitto on Home Assistant OS)."
+msgstr "Conecte ao seu broker MQTT (ex: Mosquitto no Home Assistant OS)."
+
+msgid "Broker Host / IP"
+msgstr "Host / IP do Broker"
+
+msgid "e.g. 192.168.1.10 or homeassistant.local"
+msgstr "ex: 192.168.1.10 ou homeassistant.local"
+
+msgid "Port"
+msgstr "Porta"
+
+msgid "Default: 1883"
+msgstr "Padrão: 1883"
+
+msgid "Authentication"
+msgstr "Autenticação"
+
+msgid "Leave blank if your broker does not require credentials."
+msgstr "Deixe em branco se o broker não exigir credenciais."
+
+msgid "Username"
+msgstr "Usuário"
+
+msgid "MQTT username"
+msgstr "Usuário do MQTT"
+
+msgid "Password"
+msgstr "Senha"
+
+msgid "MQTT password"
+msgstr "Senha do MQTT"
+
+msgid "Home Assistant Discovery"
+msgstr "Descoberta do Home Assistant"
+
+msgid "MQTT discovery settings — must match your HA configuration."
+msgstr "Configurações de descoberta MQTT — devem coincidir com a config do HA."
+
+msgid "Discovery Prefix"
+msgstr "Prefixo de Descoberta"
+
+msgid "Default: homeassistant"
+msgstr "Padrão: homeassistant"
+
+msgid "Automa Prefix"
+msgstr "Prefixo do Automa"
+
+msgid "Default: lnxlink"
+msgstr "Padrão: lnxlink"
+
+msgid "Changes take effect after restarting the LNXlink service."
+msgstr "As alterações têm efeito após reiniciar o serviço LNXlink."
+
+msgid "Custom Commands"
+msgstr "Comandos Personalizados"
+
+msgid "Add Command"
+msgstr "Adicionar Comando"
+
+msgid "Commands are exposed to Home Assistant via MQTT and can be triggered as scripts or automations."
+msgstr "Os comandos são expostos ao Home Assistant via MQTT e podem ser acionados como scripts ou automações."
+
+msgid "No custom commands yet.\nClick \"Add Command\" to create one."
+msgstr "Nenhum comando personalizado ainda.\nClique em \"Adicionar Comando\" para criar um."
+
+msgid "Edit Command"
+msgstr "Editar Comando"
+
+msgid "Command Name"
+msgstr "Nome do Comando"
+
+msgid "Used as the MQTT topic slug. Use lowercase letters, numbers, and underscores only."
+msgstr "Usado como identificador no tópico MQTT. Use apenas letras minúsculas, números e underscores."
+
+msgid "Name"
+msgstr "Nome"
+
+msgid "Bash Command"
+msgstr "Comando Bash"
+
+msgid "The shell command executed when Home Assistant triggers this action."
+msgstr "O comando shell executado quando o Home Assistant acionar esta ação."
+
+msgid "Delete Command?"
+msgstr "Excluir Comando?"
+
+msgid "Delete \"{name}\"? This cannot be undone."
+msgstr "Excluir \"{name}\"? Esta ação não pode ser desfeita."
+
+msgid "Delete"
+msgstr "Excluir"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "Desktop"
+msgstr "Desktop"
+
+msgid "Connectivity"
+msgstr "Conectividade"
+
+msgid "Automation"
+msgstr "Automação"

@@ -1,5 +1,5 @@
 """
-pages/commands.py - CRUD interface for custom_commands in config.yaml.
+pages/commands.py - CRUD para custom_commands. Todas as strings via i18n._().
 """
 
 import gi
@@ -8,87 +8,83 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from config_manager import ConfigManager
+import i18n
 
 
 class CommandRow(Adw.ActionRow):
-
-    def __init__(self, cmd_data: dict, on_edit, on_delete):
+    def __init__(self, cmd_data, on_edit, on_delete):
         super().__init__()
         self.cmd_data = cmd_data
-        self._refresh_display()
-
+        self._refresh()
+        _ = i18n._
         edit_btn = Gtk.Button(icon_name="document-edit-symbolic")
         edit_btn.set_valign(Gtk.Align.CENTER)
         edit_btn.add_css_class("flat")
-        edit_btn.set_tooltip_text("Edit command")
         edit_btn.connect("clicked", lambda _: on_edit(self))
         self.add_suffix(edit_btn)
-
         del_btn = Gtk.Button(icon_name="user-trash-symbolic")
         del_btn.set_valign(Gtk.Align.CENTER)
         del_btn.add_css_class("flat")
         del_btn.add_css_class("destructive-action")
-        del_btn.set_tooltip_text("Delete command")
         del_btn.connect("clicked", lambda _: on_delete(self))
         self.add_suffix(del_btn)
 
-    def _refresh_display(self):
+    def _refresh(self):
         self.set_title(self.cmd_data.get("name", "(unnamed)"))
         cmd = self.cmd_data.get("command", "")
         self.set_subtitle(cmd[:80] + ("…" if len(cmd) > 80 else ""))
 
 
 class CommandEditDialog(Adw.Dialog):
-
-    def __init__(self, parent, cmd_data: dict | None, on_save):
+    def __init__(self, parent, cmd_data, on_save):
         super().__init__()
-        self.set_title("Edit Command" if cmd_data else "Add Command")
+        _ = i18n._
+        self.set_title(_("Edit Command") if cmd_data else _("Add Command"))
         self.set_content_width(480)
-        self.on_save = on_save
-        self._cmd_data = dict(cmd_data) if cmd_data else {"name": "", "command": ""}
+        self.on_save  = on_save
+        self._data    = dict(cmd_data) if cmd_data else {"name": "", "command": ""}
         self._build_ui()
 
     def _build_ui(self):
-        toolbar_view = Adw.ToolbarView()
-        self.set_child(toolbar_view)
+        _ = i18n._
+        tv = Adw.ToolbarView()
+        self.set_child(tv)
+        hb = Adw.HeaderBar()
+        hb.set_show_start_title_buttons(False)
+        hb.set_show_end_title_buttons(False)
+        tv.add_top_bar(hb)
 
-        header = Adw.HeaderBar()
-        header.set_show_start_title_buttons(False)
-        header.set_show_end_title_buttons(False)
-        toolbar_view.add_top_bar(header)
+        cancel = Gtk.Button(label=_("Cancel"))
+        cancel.connect("clicked", lambda _: self.close())
+        hb.pack_start(cancel)
 
-        cancel_btn = Gtk.Button(label="Cancel")
-        cancel_btn.connect("clicked", lambda _: self.close())
-        header.pack_start(cancel_btn)
-
-        save_btn = Gtk.Button(label="Save")
-        save_btn.add_css_class("suggested-action")
-        save_btn.connect("clicked", self._on_save)
-        header.pack_end(save_btn)
+        save = Gtk.Button(label=_("Save"))
+        save.add_css_class("suggested-action")
+        save.connect("clicked", self._on_save)
+        hb.pack_end(save)
 
         clamp = Adw.Clamp(maximum_size=480)
         clamp.set_margin_top(16)
         clamp.set_margin_bottom(16)
         clamp.set_margin_start(12)
         clamp.set_margin_end(12)
-        toolbar_view.set_content(clamp)
+        tv.set_content(clamp)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         clamp.set_child(box)
 
         name_group = Adw.PreferencesGroup(
-            title="Command Name",
-            description="Used as the MQTT topic slug. Use lowercase letters, numbers, and underscores only.",
+            title=_("Command Name"),
+            description=_("Used as the MQTT topic slug. Use lowercase letters, numbers, and underscores only."),
         )
         box.append(name_group)
-
-        self.name_entry = Adw.EntryRow(title="Name")
-        self.name_entry.set_text(self._cmd_data.get("name", ""))
+        self.name_entry = Adw.EntryRow(title=_("Name"))
+        self.name_entry.set_text(self._data.get("name", ""))
         name_group.add(self.name_entry)
 
         cmd_group = Adw.PreferencesGroup(
-            title="Bash Command",
-            description="The shell command executed when Home Assistant triggers this action.",
+            title=_("Bash Command"),
+            description=_("The shell command executed when Home Assistant triggers this action."),
         )
         box.append(cmd_group)
 
@@ -97,7 +93,6 @@ class CommandEditDialog(Adw.Dialog):
         scroll = Gtk.ScrolledWindow()
         scroll.set_min_content_height(120)
         scroll.set_max_content_height(280)
-        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         self.cmd_view = Gtk.TextView()
         self.cmd_view.set_monospace(True)
         self.cmd_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
@@ -105,34 +100,34 @@ class CommandEditDialog(Adw.Dialog):
         self.cmd_view.set_margin_end(8)
         self.cmd_view.set_margin_top(8)
         self.cmd_view.set_margin_bottom(8)
-        self.cmd_view.get_buffer().set_text(self._cmd_data.get("command", ""))
+        self.cmd_view.get_buffer().set_text(self._data.get("command", ""))
         scroll.set_child(self.cmd_view)
         frame.set_child(scroll)
         cmd_group.add(frame)
 
-    def _on_save(self, _btn):
+    def _on_save(self, _):
+        _ = i18n._
         name = self.name_entry.get_text().strip()
-        buf = self.cmd_view.get_buffer()
-        command = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False).strip()
         if not name:
             self.name_entry.add_css_class("error")
             return
-        self._cmd_data["name"] = name
-        self._cmd_data["command"] = command
-        self.on_save(dict(self._cmd_data))
+        buf = self.cmd_view.get_buffer()
+        self._data["name"]    = name
+        self._data["command"] = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False).strip()
+        self.on_save(dict(self._data))
         self.close()
 
 
 class CommandsPage(Gtk.Box):
-
     def __init__(self, config_manager: ConfigManager):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.config_manager = config_manager
         self._commands: list[dict] = []
         self._build_ui()
-        self.connect("realize", lambda _: self._load_commands())
+        self.connect("realize", lambda _: self._load())
 
     def _build_ui(self):
+        _ = i18n._
         scroll = Gtk.ScrolledWindow(vexpand=True)
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.append(scroll)
@@ -148,20 +143,19 @@ class CommandsPage(Gtk.Box):
         clamp.set_child(outer)
 
         banner = Adw.Banner(
-            title="Commands are exposed to Home Assistant via MQTT and can be triggered as scripts or automations.",
+            title=_("Commands are exposed to Home Assistant via MQTT and can be triggered as scripts or automations."),
             revealed=True,
         )
         outer.append(banner)
 
         hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         hdr.set_margin_bottom(4)
-        title_label = Gtk.Label(label="Custom Commands")
-        title_label.add_css_class("title-4")
-        title_label.set_hexpand(True)
-        title_label.set_halign(Gtk.Align.START)
-        hdr.append(title_label)
-
-        add_btn = Gtk.Button(label="Add Command", icon_name="list-add-symbolic")
+        lbl = Gtk.Label(label=_("Custom Commands"))
+        lbl.add_css_class("title-4")
+        lbl.set_hexpand(True)
+        lbl.set_halign(Gtk.Align.START)
+        hdr.append(lbl)
+        add_btn = Gtk.Button(label=_("Add Command"), icon_name="list-add-symbolic")
         add_btn.add_css_class("suggested-action")
         add_btn.connect("clicked", self._on_add)
         hdr.append(add_btn)
@@ -171,72 +165,63 @@ class CommandsPage(Gtk.Box):
         outer.append(self.cmd_group)
 
         self.empty_label = Gtk.Label(
-            label='No custom commands yet.\nClick "Add Command" to create one.'
+            label=_('No custom commands yet.\nClick "Add Command" to create one.')
         )
         self.empty_label.set_justify(Gtk.Justification.CENTER)
         self.empty_label.add_css_class("dim-label")
         self.empty_label.set_margin_top(32)
         outer.append(self.empty_label)
 
-    def _load_commands(self):
+    def _load(self):
         self._commands = list(self.config_manager.get_custom_commands())
         self._refresh_list()
 
     def _refresh_list(self):
-        # Remove apenas AdwActionRow — não tenta remover elementos internos do grupo
-        rows_to_remove = []
+        rows = []
         child = self.cmd_group.get_first_child()
         while child:
-            next_child = child.get_next_sibling()
+            nxt = child.get_next_sibling()
             if isinstance(child, Adw.ActionRow):
-                rows_to_remove.append(child)
-            child = next_child
-
-        for row in rows_to_remove:
-            self.cmd_group.remove(row)
-
+                rows.append(child)
+            child = nxt
+        for r in rows:
+            self.cmd_group.remove(r)
         for cmd in self._commands:
-            row = CommandRow(cmd, on_edit=self._on_edit_row, on_delete=self._on_delete_row)
-            self.cmd_group.add(row)
-
+            self.cmd_group.add(CommandRow(cmd, self._on_edit, self._on_delete))
         self.empty_label.set_visible(len(self._commands) == 0)
 
-    def _on_add(self, _btn):
-        dialog = CommandEditDialog(parent=self, cmd_data=None, on_save=self._save_new_command)
-        dialog.present(self)
+    def _on_add(self, _):
+        CommandEditDialog(self, None, self._save_new).present(self)
 
-    def _save_new_command(self, cmd_data: dict):
-        self._commands.append(cmd_data)
+    def _save_new(self, data):
+        self._commands.append(data)
         self._refresh_list()
 
-    def _on_edit_row(self, row: CommandRow):
+    def _on_edit(self, row):
         idx = self._commands.index(row.cmd_data)
+        def _save(new):
+            self._commands[idx] = new
+            row.cmd_data = new
+            row._refresh()
+        CommandEditDialog(self, dict(row.cmd_data), _save).present(self)
 
-        def _save_edit(new_data):
-            self._commands[idx] = new_data
-            row.cmd_data = new_data
-            row._refresh_display()
-
-        dialog = CommandEditDialog(parent=self, cmd_data=dict(row.cmd_data), on_save=_save_edit)
-        dialog.present(self)
-
-    def _on_delete_row(self, row: CommandRow):
-        confirm = Adw.AlertDialog(
-            heading="Delete Command?",
-            body=f'Delete "{row.cmd_data.get("name", "")}"? This cannot be undone.',
+    def _on_delete(self, row):
+        _ = i18n._
+        dlg = Adw.AlertDialog(
+            heading=_("Delete Command?"),
+            body=_('Delete "{name}"? This cannot be undone.').format(
+                name=row.cmd_data.get("name", "")),
         )
-        confirm.add_response("cancel", "Cancel")
-        confirm.add_response("delete", "Delete")
-        confirm.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
-        confirm.set_default_response("cancel")
-
-        def _on_response(dlg, response):
-            if response == "delete":
+        dlg.add_response("cancel", _("Cancel"))
+        dlg.add_response("delete", _("Delete"))
+        dlg.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dlg.set_default_response("cancel")
+        def _resp(d, r):
+            if r == "delete":
                 self._commands = [c for c in self._commands if c is not row.cmd_data]
                 self._refresh_list()
-
-        confirm.connect("response", _on_response)
-        confirm.present(self)
+        dlg.connect("response", _resp)
+        dlg.present(self)
 
     def apply_to_config(self):
         self.config_manager.set_custom_commands(list(self._commands))

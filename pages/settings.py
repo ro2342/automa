@@ -1,13 +1,10 @@
 """
-pages/settings.py - Configurações do app: tema, idioma, startup e backup.
-
-Startup funciona via arquivos .desktop em ~/.config/autostart/
-(padrão XDG — funciona em GNOME, KDE, XFCE etc sem depender de systemd).
+pages/settings.py - Configurações: tema, idioma, device name, startup, backup.
+Todas as strings via i18n._().
 """
 
 import shutil
 import json
-import os
 import subprocess
 from pathlib import Path
 
@@ -19,30 +16,15 @@ from gi.repository import Gtk, Adw, GLib
 from config_manager import ConfigManager
 import i18n
 
-PREFS_PATH = Path.home() / ".config" / "lnxlink-gui" / "prefs.json"
+PREFS_PATH    = Path.home() / ".config" / "automa-gui" / "prefs.json"
 AUTOSTART_DIR = Path.home() / ".config" / "autostart"
-
-# Arquivo .desktop do nosso app para autostart
-GUI_DESKTOP_AUTOSTART = AUTOSTART_DIR / "lnxlink-gui.desktop"
-GUI_DESKTOP_CONTENT = """\
+GUI_AUTOSTART = AUTOSTART_DIR / "automa-gui.desktop"
+GUI_DESKTOP   = """\
 [Desktop Entry]
-Name=LNXlink GUI
+Name=Automa
 Comment=LNXlink MQTT Agent Control Panel
 Exec=python3 {script_path}
 Icon=io.github.lnxlink.gui
-Terminal=false
-Type=Application
-Categories=Utility;System;
-X-GNOME-Autostart-enabled=true
-"""
-
-# Arquivo .desktop do LNXlink para autostart (caso queira iniciar sem systemd)
-LNXLINK_DESKTOP_AUTOSTART = AUTOSTART_DIR / "lnxlink.desktop"
-LNXLINK_DESKTOP_CONTENT = """\
-[Desktop Entry]
-Name=LNXlink
-Comment=LNXlink MQTT Agent
-Exec={lnxlink_bin} -c {config_path}
 Terminal=false
 Type=Application
 X-GNOME-Autostart-enabled=true
@@ -62,7 +44,6 @@ def save_prefs(prefs: dict):
 
 
 def apply_theme(theme: str):
-    """Aplica tema via Adw.StyleManager — funciona na hora, sem reiniciar."""
     manager = Adw.StyleManager.get_default()
     mapping = {
         "system": Adw.ColorScheme.DEFAULT,
@@ -72,58 +53,33 @@ def apply_theme(theme: str):
     manager.set_color_scheme(mapping.get(theme, Adw.ColorScheme.DEFAULT))
 
 
-# ------------------------------------------------------------------ #
-#  Helpers de startup                                                  #
-# ------------------------------------------------------------------ #
-
-def _get_gui_script_path() -> str:
-    """Retorna o caminho absoluto do main.py desta aplicação."""
-    return str(Path(__file__).parent.parent / "main.py")
-
-
-def _get_lnxlink_bin() -> str:
-    return shutil.which("lnxlink") or str(Path.home() / ".local/bin/lnxlink")
-
-
 def is_gui_autostart_enabled() -> bool:
-    """Verifica se o LNXlink GUI está configurado para iniciar com o sistema."""
-    return GUI_DESKTOP_AUTOSTART.exists()
+    return GUI_AUTOSTART.exists()
 
 
 def set_gui_autostart(enabled: bool):
-    """Habilita/desabilita o autostart do LNXlink GUI via ~/.config/autostart."""
     AUTOSTART_DIR.mkdir(parents=True, exist_ok=True)
     if enabled:
-        GUI_DESKTOP_AUTOSTART.write_text(
-            GUI_DESKTOP_CONTENT.format(script_path=_get_gui_script_path())
-        )
+        script = str(Path(__file__).parent.parent / "main.py")
+        GUI_AUTOSTART.write_text(GUI_DESKTOP.format(script_path=script))
     else:
-        GUI_DESKTOP_AUTOSTART.unlink(missing_ok=True)
+        GUI_AUTOSTART.unlink(missing_ok=True)
 
 
 def is_lnxlink_service_autostart_enabled() -> bool:
-    """Verifica se lnxlink.service está habilitado no systemd --user."""
     try:
-        result = subprocess.run(
-            ["systemctl", "--user", "is-enabled", "lnxlink.service"],
-            capture_output=True, text=True, timeout=5
-        )
-        return result.stdout.strip() == "enabled"
+        r = subprocess.run(["systemctl", "--user", "is-enabled", "lnxlink.service"],
+                           capture_output=True, text=True, timeout=5)
+        return r.stdout.strip() == "enabled"
     except Exception:
         return False
 
 
-def is_mqtt_broker_reachable() -> bool:
-    """Testa conexão TCP com o broker MQTT configurado."""
+def is_mqtt_broker_reachable(config_manager: ConfigManager) -> bool:
     try:
-        from config_manager import ConfigManager, DEFAULT_CONFIG_PATH
         import socket
-        cm = ConfigManager()
-        cm.load()
-        mqtt = cm.get_mqtt()
-        host = mqtt.get("host", "127.0.0.1")
-        port = int(mqtt.get("port", 1883))
-        s = socket.create_connection((host, port), timeout=3)
+        mqtt = config_manager.get_mqtt()
+        s = socket.create_connection((mqtt["host"], int(mqtt["port"])), timeout=3)
         s.close()
         return True
     except Exception:
@@ -138,12 +94,7 @@ class SettingsPage(Gtk.Box):
         self.show_toast_cb  = show_toast_cb or (lambda msg, **kw: None)
         self._prefs = load_prefs()
         self._build_ui()
-        # Carrega status de startup ao exibir a página
-        self.connect("realize", lambda _: self._refresh_startup_status())
-
-    # ------------------------------------------------------------------ #
-    #  UI                                                                  #
-    # ------------------------------------------------------------------ #
+        self.connect("realize", lambda _: self._refresh_startup())
 
     def _build_ui(self):
         _ = i18n._
@@ -163,26 +114,26 @@ class SettingsPage(Gtk.Box):
         clamp.set_child(box)
 
         # ── Aparência ─────────────────────────────────────────────────
-        appearance_group = Adw.PreferencesGroup(title=_("Appearance"))
-        box.append(appearance_group)
+        app_group = Adw.PreferencesGroup(title=_("Appearance"))
+        box.append(app_group)
 
-        theme_row    = Adw.ActionRow(title=_("Color Scheme"))
-        theme_keys   = ["system", "light", "dark"]
-        theme_labels = [_("System Default"), _("Light"), _("Dark")]
-        theme_combo  = Gtk.DropDown(model=Gtk.StringList.new(theme_labels))
+        theme_row  = Adw.ActionRow(title=_("Color Scheme"))
+        theme_keys = ["system", "light", "dark"]
+        theme_lbls = [_("System Default"), _("Light"), _("Dark")]
+        theme_combo = Gtk.DropDown(model=Gtk.StringList.new(theme_lbls))
         theme_combo.set_valign(Gtk.Align.CENTER)
         cur = self._prefs.get("theme", "system")
         theme_combo.set_selected(theme_keys.index(cur) if cur in theme_keys else 0)
 
-        def on_theme(combo, _p):
-            key = theme_keys[combo.get_selected()]
-            self._prefs["theme"] = key
+        def on_theme(c, _):
+            k = theme_keys[c.get_selected()]
+            self._prefs["theme"] = k
             save_prefs(self._prefs)
-            apply_theme(key)
+            apply_theme(k)
 
         theme_combo.connect("notify::selected", on_theme)
         theme_row.add_suffix(theme_combo)
-        appearance_group.add(theme_row)
+        app_group.add(theme_row)
 
         # ── Idioma ────────────────────────────────────────────────────
         lang_group = Adw.PreferencesGroup(
@@ -191,64 +142,88 @@ class SettingsPage(Gtk.Box):
         )
         box.append(lang_group)
 
-        lang_row    = Adw.ActionRow(title=_("App Language"))
-        lang_keys   = list(i18n.AVAILABLE_LANGUAGES.keys())
-        lang_labels = list(i18n.AVAILABLE_LANGUAGES.values())
-        lang_combo  = Gtk.DropDown(model=Gtk.StringList.new(lang_labels))
+        lang_row  = Adw.ActionRow(title=_("App Language"))
+        lang_keys = list(i18n.AVAILABLE_LANGUAGES.keys())
+        lang_lbls = list(i18n.AVAILABLE_LANGUAGES.values())
+        lang_combo = Gtk.DropDown(model=Gtk.StringList.new(lang_lbls))
         lang_combo.set_valign(Gtk.Align.CENTER)
         cur_lang = self._prefs.get("language", "system")
         lang_combo.set_selected(lang_keys.index(cur_lang) if cur_lang in lang_keys else 0)
 
-        def on_lang(combo, _p):
-            key = lang_keys[combo.get_selected()]
-            self._prefs["language"] = key
+        def on_lang(c, _):
+            k = lang_keys[c.get_selected()]
+            self._prefs["language"] = k
             save_prefs(self._prefs)
 
         lang_combo.connect("notify::selected", on_lang)
         lang_row.add_suffix(lang_combo)
         lang_group.add(lang_row)
 
+        # ── Device Name ───────────────────────────────────────────────
+        device_group = Adw.PreferencesGroup(
+            title=_("Device"),
+            description=_("Name shown in Home Assistant for this machine."),
+        )
+        box.append(device_group)
+
+        self.device_name_row = Adw.EntryRow(title=_("Device Name"))
+        # Carrega o clientId atual do config
+        current_name = str(self.config_manager.get("mqtt", "clientId") or
+                           self.config_manager.get("mqtt", "prefix") or "")
+        if not current_name:
+            import socket as _sock
+            current_name = _sock.gethostname()
+        self.device_name_row.set_text(current_name)
+
+        save_name_btn = Gtk.Button(label=_("Save"))
+        save_name_btn.set_valign(Gtk.Align.CENTER)
+        save_name_btn.add_css_class("suggested-action")
+        save_name_btn.connect("clicked", self._on_save_device_name)
+        self.device_name_row.add_suffix(save_name_btn)
+        device_group.add(self.device_name_row)
+
+        hint = Gtk.Label(label=_("After changing, restart the LNXlink service for it to take effect."))
+        hint.add_css_class("dim-label")
+        hint.add_css_class("caption")
+        hint.set_halign(Gtk.Align.START)
+        device_group.add(hint)
+
         # ── Startup ───────────────────────────────────────────────────
         startup_group = Adw.PreferencesGroup(
-            title="Startup",
-            description="Configure which components start automatically when you log in.",
+            title=_("Startup"),
+            description=_("Configure which components start automatically when you log in."),
         )
         box.append(startup_group)
 
-        # LNXlink GUI autostart
         self.gui_startup_row = Adw.SwitchRow(
-            title="LNXlink GUI",
-            subtitle="Start this control panel on login (~/.config/autostart)",
+            title=_("Automa"),
+            subtitle=_("Start this control panel on login (~/.config/autostart)"),
         )
-        self.gui_startup_row.connect("notify::active", self._on_gui_startup_toggled)
+        self.gui_startup_row.connect("notify::active", self._on_gui_startup)
         startup_group.add(self.gui_startup_row)
 
-        # LNXlink service via systemd
         self.service_startup_row = Adw.SwitchRow(
-            title="LNXlink Service",
-            subtitle="Start lnxlink.service on login (systemctl --user enable)",
+            title=_("LNXlink Service"),
+            subtitle=_("Start lnxlink.service on login (systemctl --user enable)"),
         )
-        self.service_startup_row.connect("notify::active", self._on_service_startup_toggled)
+        self.service_startup_row.connect("notify::active", self._on_service_startup)
         startup_group.add(self.service_startup_row)
 
-        # Status do broker MQTT (somente leitura — não dá pra controlar daqui)
         self.mqtt_status_row = Adw.ActionRow(
-            title="MQTT Broker",
-            subtitle="Checking connection…",
+            title=_("MQTT Broker"),
+            subtitle=_("Checking connection…"),
         )
-        self.mqtt_status_icon = Gtk.Image()
-        self.mqtt_status_icon.set_pixel_size(16)
-        self.mqtt_status_row.add_suffix(self.mqtt_status_icon)
-
+        self.mqtt_icon = Gtk.Image()
+        self.mqtt_icon.set_pixel_size(16)
+        self.mqtt_status_row.add_suffix(self.mqtt_icon)
         refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic")
         refresh_btn.add_css_class("flat")
         refresh_btn.set_valign(Gtk.Align.CENTER)
-        refresh_btn.set_tooltip_text("Re-check connection")
-        refresh_btn.connect("clicked", lambda _: self._refresh_startup_status())
+        refresh_btn.connect("clicked", lambda _: self._refresh_startup())
         self.mqtt_status_row.add_suffix(refresh_btn)
         startup_group.add(self.mqtt_status_row)
 
-        # ── Backup & Restore ──────────────────────────────────────────
+        # ── Backup ────────────────────────────────────────────────────
         backup_group = Adw.PreferencesGroup(title=_("Backup & Restore"))
         box.append(backup_group)
 
@@ -270,114 +245,107 @@ class SettingsPage(Gtk.Box):
         import_row.connect("activated", self._on_import)
         backup_group.add(import_row)
 
-    # ------------------------------------------------------------------ #
-    #  Startup status                                                      #
-    # ------------------------------------------------------------------ #
+    # ── Device name ───────────────────────────────────────────────────
 
-    def _refresh_startup_status(self):
-        """Verifica status de todos os itens de startup em background."""
+    def _on_save_device_name(self, _):
+        _ = i18n._
+        name = self.device_name_row.get_text().strip()
+        if not name:
+            return
+        self.config_manager.set("mqtt", "clientId", name)
+        self.config_manager.set("mqtt", "prefix",   name.lower().replace(" ", "_"))
+        self.config_manager.save()
+        self.show_toast_cb(_("Device name saved. Restart the service to apply."))
+
+    # ── Startup ───────────────────────────────────────────────────────
+
+    def _refresh_startup(self):
         import threading
-        threading.Thread(target=self._check_status_thread, daemon=True).start()
+        threading.Thread(target=self._check_thread, daemon=True).start()
 
-    def _check_status_thread(self):
-        gui_enabled     = is_gui_autostart_enabled()
-        service_enabled = is_lnxlink_service_autostart_enabled()
-        mqtt_ok         = is_mqtt_broker_reachable()
-        GLib.idle_add(self._update_status_ui, gui_enabled, service_enabled, mqtt_ok)
+    def _check_thread(self):
+        gui_ok     = is_gui_autostart_enabled()
+        service_ok = is_lnxlink_service_autostart_enabled()
+        mqtt_ok    = is_mqtt_broker_reachable(self.config_manager)
+        GLib.idle_add(self._update_startup_ui, gui_ok, service_ok, mqtt_ok)
 
-    def _update_status_ui(self, gui_enabled, service_enabled, mqtt_ok):
-        # GUI toggle
-        self.gui_startup_row.handler_block_by_func(self._on_gui_startup_toggled)
-        self.gui_startup_row.set_active(gui_enabled)
-        self.gui_startup_row.handler_unblock_by_func(self._on_gui_startup_toggled)
+    def _update_startup_ui(self, gui_ok, service_ok, mqtt_ok):
+        _ = i18n._
+        self.gui_startup_row.handler_block_by_func(self._on_gui_startup)
+        self.gui_startup_row.set_active(gui_ok)
+        self.gui_startup_row.handler_unblock_by_func(self._on_gui_startup)
 
-        # Service toggle
-        self.service_startup_row.handler_block_by_func(self._on_service_startup_toggled)
-        self.service_startup_row.set_active(service_enabled)
-        self.service_startup_row.handler_unblock_by_func(self._on_service_startup_toggled)
+        self.service_startup_row.handler_block_by_func(self._on_service_startup)
+        self.service_startup_row.set_active(service_ok)
+        self.service_startup_row.handler_unblock_by_func(self._on_service_startup)
 
-        # MQTT status (só leitura)
         if mqtt_ok:
-            self.mqtt_status_row.set_subtitle("Connected ✓")
-            self.mqtt_status_icon.set_from_icon_name("emblem-ok-symbolic")
+            self.mqtt_status_row.set_subtitle(_("Connected ✓"))
+            self.mqtt_icon.set_from_icon_name("emblem-ok-symbolic")
         else:
-            self.mqtt_status_row.set_subtitle("Unreachable — check broker host and port")
-            self.mqtt_status_icon.set_from_icon_name("dialog-warning-symbolic")
-
+            self.mqtt_status_row.set_subtitle(_("Unreachable — check broker host and port"))
+            self.mqtt_icon.set_from_icon_name("dialog-warning-symbolic")
         return GLib.SOURCE_REMOVE
 
-    # ------------------------------------------------------------------ #
-    #  Startup toggles                                                     #
-    # ------------------------------------------------------------------ #
-
-    def _on_gui_startup_toggled(self, row, _param):
-        enabled = row.get_active()
+    def _on_gui_startup(self, row, _):
+        _ = i18n._
         try:
-            set_gui_autostart(enabled)
-            msg = "LNXlink GUI will start on login." if enabled else "LNXlink GUI removed from startup."
+            set_gui_autostart(row.get_active())
+            msg = (_("Automa will start on login.") if row.get_active()
+                   else _("Automa removed from startup."))
             self.show_toast_cb(msg)
-        except Exception as exc:
-            self.show_toast_cb(f"Error: {exc}", is_error=True)
+        except Exception as e:
+            self.show_toast_cb(f"Error: {e}", is_error=True)
 
-    def _on_service_startup_toggled(self, row, _param):
-        enabled = row.get_active()
+    def _on_service_startup(self, row, _):
+        _ = i18n._
         try:
-            action = "enable" if enabled else "disable"
-            subprocess.run(
-                ["systemctl", "--user", action, "lnxlink.service"],
-                capture_output=True, timeout=5
-            )
-            msg = "LNXlink service enabled on startup." if enabled else "LNXlink service disabled from startup."
+            action = "enable" if row.get_active() else "disable"
+            subprocess.run(["systemctl", "--user", action, "lnxlink.service"],
+                           capture_output=True, timeout=5)
+            msg = (_("LNXlink service enabled on startup.") if row.get_active()
+                   else _("LNXlink service disabled from startup."))
             self.show_toast_cb(msg)
-        except Exception as exc:
-            self.show_toast_cb(f"Error: {exc}", is_error=True)
+        except Exception as e:
+            self.show_toast_cb(f"Error: {e}", is_error=True)
 
-    # ------------------------------------------------------------------ #
-    #  Backup / Restore                                                    #
-    # ------------------------------------------------------------------ #
+    # ── Backup ────────────────────────────────────────────────────────
 
     def _get_window(self):
-        widget = self
-        while widget:
-            if isinstance(widget, Gtk.Window):
-                return widget
-            widget = widget.get_parent()
+        w = self
+        while w:
+            if isinstance(w, Gtk.Window): return w
+            w = w.get_parent()
         return None
 
-    def _on_export(self, _row):
+    def _on_export(self, _):
         _ = i18n._
-        dialog = Gtk.FileDialog()
-        dialog.set_title(_("Export Configuration"))
-        dialog.set_initial_name("lnxlink-config-backup.yaml")
-
-        def _done(dlg, result):
+        d = Gtk.FileDialog()
+        d.set_title(_("Export Configuration"))
+        d.set_initial_name("automa-config-backup.yaml")
+        def done(dlg, res):
             try:
-                dest = dlg.save_finish(result).get_path()
+                dest = dlg.save_finish(res).get_path()
                 shutil.copy2(self.config_manager.config_path, dest)
                 self.show_toast_cb(_("Configuration exported to {path}").format(path=dest))
-            except GLib.Error:
-                pass
-            except Exception as exc:
-                self.show_toast_cb(_("Error exporting: {error}").format(error=exc), is_error=True)
+            except GLib.Error: pass
+            except Exception as e:
+                self.show_toast_cb(_("Error exporting: {error}").format(error=e), is_error=True)
+        d.save(self._get_window(), None, done)
 
-        dialog.save(self._get_window(), None, _done)
-
-    def _on_import(self, _row):
+    def _on_import(self, _):
         _ = i18n._
-        dialog = Gtk.FileDialog()
-        dialog.set_title(_("Import Configuration"))
-
-        def _done(dlg, result):
+        d = Gtk.FileDialog()
+        d.set_title(_("Import Configuration"))
+        def done(dlg, res):
             try:
-                src = dlg.open_finish(result).get_path()
+                src = dlg.open_finish(res).get_path()
                 dest = self.config_manager.config_path
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dest)
                 self.config_manager.load()
                 self.show_toast_cb(_("Configuration imported successfully!"))
-            except GLib.Error:
-                pass
-            except Exception as exc:
-                self.show_toast_cb(_("Error importing: {error}").format(error=exc), is_error=True)
-
-        dialog.open(self._get_window(), None, _done)
+            except GLib.Error: pass
+            except Exception as e:
+                self.show_toast_cb(_("Error importing: {error}").format(error=e), is_error=True)
+        d.open(self._get_window(), None, done)
