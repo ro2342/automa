@@ -1,2 +1,2 @@
-#!/bin/bash
+#!/bin/sh
 exec python3 /app/share/automa/main.py "$@"
