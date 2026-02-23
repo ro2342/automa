@@ -54,4 +54,4 @@ modules:
       - type: git
         url: https://github.com/ro2342/automa.git
         tag: v1.0.0
-        commit: HASH_PLACEHOLDER
+        commit: 957a581662ce324cbdb7f64a217e7bef8f7ceba5
