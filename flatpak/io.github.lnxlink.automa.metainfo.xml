@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.lnxlink.automa</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Automa</name>
+  <name xml:lang="pt_BR">Automa</name>
+  <summary>Control panel for LNXlink MQTT agent</summary>
+  <summary xml:lang="pt_BR">Painel de controle para o agente MQTT LNXlink</summary>
+  <description>
+    <p>
+      Automa is a GTK4/libadwaita graphical control panel for LNXlink,
+      the MQTT agent that integrates your Linux desktop with Home Assistant.
+      No terminal needed — configure everything from a clean GNOME interface.
+    </p>
+    <p xml:lang="pt_BR">
+      Automa é um painel de controle GTK4/libadwaita para o LNXlink,
+      o agente MQTT que integra seu desktop Linux ao Home Assistant.
+      Sem terminal — configure tudo pela interface gráfica do GNOME.
+    </p>
+    <ul>
+      <li>Start, stop and restart the LNXlink service</li>
+      <li>Configure your MQTT broker connection</li>
+      <li>Enable or disable individual sensors (CPU, memory, camera, and more)</li>
+      <li>Create custom commands triggerable from Home Assistant automations</li>
+      <li>Set the device name shown in Home Assistant</li>
+      <li>Configure autostart on login</li>
+      <li>Follows GNOME accent color and dark/light theme automatically</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.lnxlink.automa.desktop</launchable>
+  <url type="homepage">https://github.com/ro2342/automa</url>
+  <url type="bugtracker">https://github.com/ro2342/automa/issues</url>
+  <developer>
+    <name>ro2342</name>
+  </developer>
+  <branding>
+    <color type="primary" scheme_preference="light">#1c71d8</color>
+    <color type="primary" scheme_preference="dark">#0d47a1</color>
+  </branding>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Dashboard showing LNXlink service status and controls</caption>
+      <image>https://raw.githubusercontent.com/ro2342/automa/main/docs/screenshots/dashboard.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Sensor management — enable or disable individual modules</caption>
+      <image>https://raw.githubusercontent.com/ro2342/automa/main/docs/screenshots/sensors.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>MQTT broker configuration</caption>
+      <image>https://raw.githubusercontent.com/ro2342/automa/main/docs/screenshots/mqtt.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="1.0.0" date="2026-02-22">
+      <description><p>Initial release of Automa.</p></description>
+    </release>
+  </releases>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <content_rating type="oars-1.1"/>
+</component>

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Automa
+Comment=LNXlink MQTT Agent Control Panel
+Comment[pt_BR]=Painel de controle do agente MQTT LNXlink
+Exec=automa
+Icon=io.github.lnxlink.automa
+Terminal=false
+Type=Application
+Categories=Utility;System;Network;
+Keywords=mqtt;home assistant;lnxlink;smart home;iot;automation;
+StartupWMClass=automa
