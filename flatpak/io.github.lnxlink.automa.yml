@@ -23,18 +23,25 @@ modules:
   - name: automa
     buildsystem: simple
     build-commands:
-      # Instala o lançador no caminho oficial de execução do Flatpak
-      - install -Dm755 bin/automa /app/bin/automa
-      
-      # Copia todo o seu código fonte para a pasta interna do app
+      # 1. Cria a pasta de destino
       - mkdir -p /app/share/automa
+      
+      # 2. Copia TUDO (mantém a estrutura exata de pastas)
       - cp -r . /app/share/automa/
       
-      # Instala o desktop file e os ícones (que já estão na sua pasta flatpak/)
+      # 3. FAXINA: Deleta especificamente o que está sujando seu build
+      # Isso garante que, mesmo que o arquivo exista no seu PC/Git, 
+      # ele seja banido do pacote final do Flatpak.
+      - rm -rf /app/share/automa/build-dir
+      - rm -rf /app/share/automa/.flatpak-builder
+      - rm -f /app/share/automa/data/icons/hicolor/scalable/apps/io.github.lnxlink.gui.svg
+      
+      # 4. Continua com as instalações oficiais
+      - install -Dm755 bin/automa /app/bin/automa
       - install -Dm644 flatpak/io.github.lnxlink.automa.desktop /app/share/applications/io.github.lnxlink.automa.desktop
       - install -Dm644 flatpak/io.github.lnxlink.automa.metainfo.xml /app/share/metainfo/io.github.lnxlink.automa.metainfo.xml
       - install -Dm644 flatpak/icons/io.github.lnxlink.automa.svg /app/share/icons/hicolor/scalable/apps/io.github.lnxlink.automa.svg
-      - install -Dm644 flatpak/icons/io.github.lnxlink.automa-symbolic.svg /app/share/icons/hicolor/symbolic/apps/io.github.lnxlink.automa-symbolic.svg
+      
     sources:
       - type: git
         url: https://github.com/ro2342/automa.git
