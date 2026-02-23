@@ -7,3 +7,5 @@ build-dir/
 *.egg-info/
 dist/
 .venv/
+__pycache__/
+*.pyc

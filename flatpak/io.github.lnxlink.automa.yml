@@ -34,7 +34,7 @@ modules:
       # ele seja banido do pacote final do Flatpak.
       - rm -rf /app/share/automa/build-dir
       - rm -rf /app/share/automa/.flatpak-builder
-      - rm -f /app/share/automa/data/icons/hicolor/scalable/apps/io.github.lnxlink.gui.svg
+      - rm -f /app/share/automa/data/icons/hicolor/scalable/apps/io.github.lnxlink.automa.svg
       
       # 4. Continua com as instalações oficiais
       - install -Dm755 bin/automa /app/bin/automa

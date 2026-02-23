@@ -60,18 +60,18 @@ sudo dnf install flatpak-builder   # or apt install flatpak-builder
 ```
 
 ### 2. Fix source checksums
-Before building, update the `sha256` fields in `io.github.lnxlink.gui.json`
+Before building, update the `sha256` fields in `io.github.lnxlink.automa.json`
 for `ruamel.yaml`, `ruamel.yaml.clib`, and `libayatana-appindicator` by
 downloading the tarballs and running `sha256sum` on them.
 
 ### 3. Build
 ```bash
-flatpak-builder --user --install --force-clean build-dir io.github.lnxlink.gui.json
+flatpak-builder --user --install --force-clean build-dir io.github.lnxlink.automa.json
 ```
 
 ### 4. Run
 ```bash
-flatpak run io.github.lnxlink.gui
+flatpak run io.github.lnxlink.automa
 ```
 
 ---
@@ -122,11 +122,11 @@ lnxlink-gui/
 │   └── commands.py                  # Custom commands CRUD
 ├── data/
 │   ├── lnxlink-gui.sh               # Flatpak launcher script
-│   ├── io.github.lnxlink.gui.desktop
-│   ├── io.github.lnxlink.gui.metainfo.xml
+│   ├── io.github.lnxlink.automa.desktop
+│   ├── io.github.lnxlink.automa.metainfo.xml
 │   └── icons/hicolor/scalable/apps/
-│       └── io.github.lnxlink.gui.svg
-└── io.github.lnxlink.gui.json      # Flatpak manifest
+│       └── io.github.lnxlink.automa.svg
+└── io.github.lnxlink.automa.json      # Flatpak manifest
 ```
 
 ---
