@@ -99,10 +99,54 @@ def detect_distro() -> Distro:
 
 
 def is_lnxlink_installed() -> bool:
-    """Verifica PATH padrão + ~/.local/bin (onde o pipx instala)."""
+    """Verifica todas as formas possíveis de instalação do LNXlink:
+    - PATH do sistema (dnf, apt, pacman...)
+    - ~/.local/bin (pipx, pip --user)
+    - venv do pipx
+    - Flatpak (flatpak list)
+    - Snap
+    """
+    # 1. PATH do sistema ou PATH visível (funciona fora do Flatpak)
     if shutil.which("lnxlink"):
         return True
-    return Path.home().joinpath(".local/bin/lnxlink").exists()
+
+    # 2. ~/.local/bin — pipx e pip --user instalam aqui
+    #    Funciona dentro do Flatpak porque $HOME é montado
+    if Path.home().joinpath(".local/bin/lnxlink").exists():
+        return True
+
+    # 3. venv do pipx
+    venv = Path.home() / ".local/share/pipx/venvs/lnxlink/bin/lnxlink"
+    if venv.exists():
+        return True
+
+    # 4. Instalação global em /usr/local/bin (alguns sistemas)
+    if Path("/usr/local/bin/lnxlink").exists():
+        return True
+
+    # 5. Flatpak — verifica se o pacote lnxlink está instalado
+    try:
+        r = subprocess.run(
+            ["flatpak", "list", "--app"],
+            capture_output=True, text=True, timeout=5
+        )
+        if "lnxlink" in r.stdout.lower():
+            return True
+    except Exception:
+        pass
+
+    # 6. Snap
+    try:
+        r = subprocess.run(
+            ["snap", "list"],
+            capture_output=True, text=True, timeout=5
+        )
+        if "lnxlink" in r.stdout.lower():
+            return True
+    except Exception:
+        pass
+
+    return False
 
 
 def is_pipx_installed() -> bool:
