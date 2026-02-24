@@ -99,19 +99,50 @@ def detect_distro() -> Distro:
 
 
 def is_lnxlink_installed() -> bool:
-    """Verifica todas as formas possíveis de instalação do LNXlink:
-    - PATH do sistema (dnf, apt, pacman...)
-    - ~/.local/bin (pipx, pip --user)
-    - venv do pipx
-    - Flatpak (flatpak list)
-    - Snap
+    """Verifica todas as formas possíveis de instalação do LNXlink.
+    Dentro do Flatpak usa DBus para verificar o serviço, evitando
+    problemas de filesystem isolation.
     """
-    # 1. PATH do sistema ou PATH visível (funciona fora do Flatpak)
+    IS_FLATPAK = bool(os.environ.get("FLATPAK_ID"))
+
+    if IS_FLATPAK:
+        # Dentro do Flatpak: verifica pelo DBus se lnxlink.service existe
+        try:
+            from gi.repository import Gio, GLib
+            proxy = Gio.DBusProxy.new_for_bus_sync(
+                Gio.BusType.SESSION,
+                Gio.DBusProxyFlags.NONE,
+                None,
+                "org.freedesktop.systemd1",
+                "/org/freedesktop/systemd1",
+                "org.freedesktop.systemd1.Manager",
+                None,
+            )
+            proxy.call_sync(
+                "GetUnit",
+                GLib.Variant("(s)", ("lnxlink.service",)),
+                Gio.DBusCallFlags.NONE,
+                5000,
+                None,
+            )
+            return True  # serviço existe
+        except Exception:
+            pass
+
+        # Fallback: verifica o arquivo .service do usuário
+        service = Path.home() / ".config/systemd/user/lnxlink.service"
+        if service.exists():
+            return True
+
+        return False
+
+    # Fora do Flatpak: verifica todas as localizações possíveis
+
+    # 1. PATH do sistema (dnf, apt, pacman...)
     if shutil.which("lnxlink"):
         return True
 
-    # 2. ~/.local/bin — pipx e pip --user instalam aqui
-    #    Funciona dentro do Flatpak porque $HOME é montado
+    # 2. ~/.local/bin — pipx e pip --user
     if Path.home().joinpath(".local/bin/lnxlink").exists():
         return True
 
@@ -120,16 +151,14 @@ def is_lnxlink_installed() -> bool:
     if venv.exists():
         return True
 
-    # 4. Instalação global em /usr/local/bin (alguns sistemas)
+    # 4. /usr/local/bin
     if Path("/usr/local/bin/lnxlink").exists():
         return True
 
-    # 5. Flatpak — verifica se o pacote lnxlink está instalado
+    # 5. Flatpak
     try:
-        r = subprocess.run(
-            ["flatpak", "list", "--app"],
-            capture_output=True, text=True, timeout=5
-        )
+        r = subprocess.run(["flatpak", "list", "--app"],
+                           capture_output=True, text=True, timeout=5)
         if "lnxlink" in r.stdout.lower():
             return True
     except Exception:
@@ -137,10 +166,8 @@ def is_lnxlink_installed() -> bool:
 
     # 6. Snap
     try:
-        r = subprocess.run(
-            ["snap", "list"],
-            capture_output=True, text=True, timeout=5
-        )
+        r = subprocess.run(["snap", "list"],
+                           capture_output=True, text=True, timeout=5)
         if "lnxlink" in r.stdout.lower():
             return True
     except Exception:
