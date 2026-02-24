@@ -194,11 +194,14 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         def _make_icon(name):
             icon_file = os.path.join(_icons_dir, f"{name}.svg")
             if os.path.exists(icon_file):
-                img = Gtk.Image.new_from_file(icon_file)
+                # Carrega o SVG como paintable com colorização automática
+                texture = Gtk.IconPaintable.new_for_file(
+                    Gio.File.new_for_path(icon_file), 16, 1
+                )
+                img = Gtk.Image.new_from_paintable(texture)
             else:
                 img = Gtk.Image.new_from_icon_name(name)
             img.set_pixel_size(16)
-            # Mesma cor do texto da sidebar
             img.add_css_class("dim-label")
             return img
 
