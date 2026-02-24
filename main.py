@@ -190,16 +190,22 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         import os
         _base = os.path.dirname(os.path.abspath(__file__))
         _icons_dir = os.path.join(_base, "data", "icons")
-        for icon_name, label in nav_items:
-            row = Adw.ActionRow()
-            row.set_title(label)
-            icon_file = os.path.join(_icons_dir, f"{icon_name}.svg")
+
+        def _make_icon(name):
+            icon_file = os.path.join(_icons_dir, f"{name}.svg")
             if os.path.exists(icon_file):
                 img = Gtk.Image.new_from_file(icon_file)
             else:
-                img = Gtk.Image.new_from_icon_name(icon_name)
+                img = Gtk.Image.new_from_icon_name(name)
             img.set_pixel_size(16)
-            row.add_prefix(img)
+            # Mesma cor do texto da sidebar
+            img.add_css_class("dim-label")
+            return img
+
+        for icon_name, label in nav_items:
+            row = Adw.ActionRow()
+            row.set_title(label)
+            row.add_prefix(_make_icon(icon_name))
             row.set_activatable(True)
             self.list_box.append(row)
 
@@ -217,7 +223,8 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         content_bar.set_show_start_title_buttons(False)
 
         # Botão hamburguer (abre sidebar em modo mobile / tela pequena)
-        toggle_btn = Gtk.ToggleButton(icon_name="sidebar-show-symbolic")
+        toggle_btn = Gtk.ToggleButton()
+        toggle_btn.set_child(_make_icon("sidebar-show-symbolic"))
         toggle_btn.set_tooltip_text("Toggle Sidebar")
         toggle_btn.set_active(True)
         toggle_btn.connect("toggled", lambda btn: self.split_view.set_show_sidebar(btn.get_active()))
