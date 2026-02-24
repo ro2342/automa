@@ -116,7 +116,7 @@ from pages.settings import SettingsPage
 from pages.welcome import WelcomePage
 from css_loader import load_css
 
-APP_ID      = "io.github.lnxlink.gui"
+APP_ID      = "io.github.ro2342.automa"
 APP_NAME    = "Automa"
 APP_VERSION = "1.0.0"
 
