@@ -7,13 +7,85 @@ import sys
 import os
 import signal
 import logging
+import time
+
+# ── Logging com cores e timestamps ─────────────────────────────────────────
+_START_TIME = time.monotonic()
+
+RESET  = "\033[0m"
+BOLD   = "\033[1m"
+DIM    = "\033[2m"
+CYAN   = "\033[36m"
+GREEN  = "\033[32m"
+YELLOW = "\033[33m"
+RED    = "\033[31m"
+BLUE   = "\033[34m"
+
+LEVEL_COLORS = {
+    "DEBUG":    DIM + BLUE,
+    "INFO":     GREEN,
+    "WARNING":  YELLOW,
+    "ERROR":    RED,
+    "CRITICAL": BOLD + RED,
+}
+
+
+class _ColorFormatter(logging.Formatter):
+    def format(self, record):
+        elapsed = time.monotonic() - _START_TIME
+        color   = LEVEL_COLORS.get(record.levelname, "")
+        level   = f"{color}{record.levelname:<8}{RESET}"
+        name    = f"{DIM}{record.name}{RESET}"
+        t       = f"{DIM}+{elapsed:05.2f}s{RESET}"
+        msg     = super().format(record)
+        # Extrai só a mensagem formatada (sem level/name do formatter padrão)
+        record.getMessage()
+        plain_msg = record.getMessage()
+        if record.exc_info:
+            plain_msg += "\n" + self.formatException(record.exc_info)
+        return f"{t} {level} {name}: {plain_msg}"
+
+
+def _setup_logging():
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(logging.DEBUG)
+
+    # Usa cores só se o terminal suportar
+    if sys.stderr.isatty():
+        handler.setFormatter(_ColorFormatter())
+    else:
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        ))
+
+    root.addHandler(handler)
+
+    # Silencia loggers muito verbosos de terceiros
+    for noisy in ("gi.repository", "urllib3", "asyncio"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
+
+_setup_logging()
+log = logging.getLogger(__name__)
+
+log.info("━━━ Automa starting ━━━")
+log.debug("Python %s | pid %d", sys.version.split()[0], os.getpid())
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+log.debug("Importing GTK/Adwaita…")
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib
+log.debug("GTK %d.%d | Adw %d.%d",
+    Gtk.get_major_version(), Gtk.get_minor_version(),
+    Adw.VERSION_S and 0 or Adw.get_major_version(),
+    Adw.get_minor_version() if hasattr(Adw, "get_minor_version") else 0,
+)
 
 try:
     gi.require_version("AyatanaAppIndicator3", "0.1")
@@ -44,7 +116,7 @@ from pages.settings import SettingsPage
 from pages.welcome import WelcomePage
 from css_loader import load_css
 
-APP_ID      = "io.github.ro2342.automa"
+APP_ID      = "io.github.lnxlink.gui"
 APP_NAME    = "Automa"
 APP_VERSION = "1.0.0"
 
@@ -115,10 +187,17 @@ class LNXlinkWindow(Adw.ApplicationWindow):
             ("utilities-terminal-symbolic", _("Commands")),
             ("preferences-system-symbolic", _("Settings")),
         ]
+        import os
+        _base = os.path.dirname(os.path.abspath(__file__))
+        _icons_dir = os.path.join(_base, "data", "icons")
         for icon_name, label in nav_items:
             row = Adw.ActionRow()
             row.set_title(label)
-            img = Gtk.Image.new_from_icon_name(icon_name)
+            icon_file = os.path.join(_icons_dir, f"{icon_name}.svg")
+            if os.path.exists(icon_file):
+                img = Gtk.Image.new_from_file(icon_file)
+            else:
+                img = Gtk.Image.new_from_icon_name(icon_name)
             img.set_pixel_size(16)
             row.add_prefix(img)
             row.set_activatable(True)
