@@ -1,5 +1,21 @@
 #!/bin/sh
-# Gera cache de ícones para garantir que todos os simbólicos sejam encontrados
-gtk-update-icon-cache -f -t /usr/share/icons/Adwaita 2>/dev/null || true
-gtk-update-icon-cache -f -t /app/share/icons/hicolor 2>/dev/null || true
+# Adiciona os ícones do runtime ao tema hicolor para o app encontrá-los
+HICOLOR=/app/share/icons/hicolor
+
+mkdir -p "$HICOLOR/symbolic/actions"
+mkdir -p "$HICOLOR/symbolic/devices"
+mkdir -p "$HICOLOR/symbolic/apps"
+mkdir -p "$HICOLOR/symbolic/categories"
+
+# Copia os ícones que o app usa do Adwaita para o hicolor
+for src_dir in /usr/share/icons/Adwaita/symbolic/actions \
+               /usr/share/icons/Adwaita/symbolic/devices \
+               /usr/share/icons/Adwaita/symbolic/apps \
+               /usr/share/icons/Adwaita/symbolic/categories \
+               /usr/share/icons/Adwaita/symbolic/legacy; do
+    [ -d "$src_dir" ] && cp -n "$src_dir"/*.svg "$HICOLOR/symbolic/actions/" 2>/dev/null || true
+done
+
+gtk-update-icon-cache -f -t "$HICOLOR" 2>/dev/null || true
+
 exec python3 /app/share/automa/main.py "$@"
