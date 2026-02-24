@@ -1,20 +1,25 @@
 """
-service_manager.py - Gerencia o lnxlink.service do systemd --user.
+service_manager.py - Controla o lnxlink.service via DBus (org.freedesktop.systemd1).
 
-IMPORTANTE: enable() e disable() NÃO iniciam/param o serviço.
-Usamos 'systemctl --user enable' sem --now para não interferir
-com o estado atual do serviço.
+Usa GLib/Gio para comunicação DBus — funciona dentro do sandbox Flatpak
+sem precisar de flatpak-spawn ou acesso direto ao systemctl.
 """
 
-import subprocess
-import os
 import logging
 from enum import Enum, auto
+
+from gi.repository import Gio, GLib
 
 log = logging.getLogger(__name__)
 
 SERVICE_NAME = "lnxlink.service"
-IS_FLATPAK   = bool(os.environ.get("FLATPAK_ID"))
+
+# Constantes DBus do systemd
+SYSTEMD_BUS   = "org.freedesktop.systemd1"
+SYSTEMD_PATH  = "/org/freedesktop/systemd1"
+SYSTEMD_IFACE = "org.freedesktop.systemd1.Manager"
+UNIT_IFACE    = "org.freedesktop.systemd1.Unit"
+PROPS_IFACE   = "org.freedesktop.DBus.Properties"
 
 
 class ServiceStatus(Enum):
@@ -24,31 +29,64 @@ class ServiceStatus(Enum):
     UNKNOWN = auto()
 
 
-def _build_cmd(args: list[str]) -> list[str]:
-    if IS_FLATPAK:
-        return ["flatpak-spawn", "--host"] + args
-    return args
+def _get_systemd() -> Gio.DBusProxy:
+    """Retorna um proxy para o Manager do systemd do usuário."""
+    return Gio.DBusProxy.new_for_bus_sync(
+        Gio.BusType.SESSION,
+        Gio.DBusProxyFlags.NONE,
+        None,
+        SYSTEMD_BUS,
+        SYSTEMD_PATH,
+        SYSTEMD_IFACE,
+        None,
+    )
 
 
-def _run(args: list[str], **kwargs) -> subprocess.CompletedProcess:
-    cmd = _build_cmd(args)
-    log.debug("Running: %s", " ".join(cmd))
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=10, **kwargs)
+def _get_unit_proxy(unit_path: str) -> Gio.DBusProxy:
+    """Retorna proxy de propriedades para uma unit."""
+    return Gio.DBusProxy.new_for_bus_sync(
+        Gio.BusType.SESSION,
+        Gio.DBusProxyFlags.NONE,
+        None,
+        SYSTEMD_BUS,
+        unit_path,
+        PROPS_IFACE,
+        None,
+    )
+
+
+def _call(proxy: Gio.DBusProxy, method: str, params=None) -> GLib.Variant:
+    """Chama um método DBus e retorna o resultado."""
+    return proxy.call_sync(
+        method,
+        params,
+        Gio.DBusCallFlags.NONE,
+        10000,  # timeout ms
+        None,
+    )
 
 
 class ServiceManager:
 
     def get_status(self) -> ServiceStatus:
         try:
-            result = _run(["systemctl", "--user", "is-active", SERVICE_NAME])
-            state  = result.stdout.strip()
+            mgr       = _get_systemd()
+            result    = _call(mgr, "GetUnit", GLib.Variant("(s)", (SERVICE_NAME,)))
+            unit_path = result[0]
+            props     = _get_unit_proxy(unit_path)
+            state     = _call(props, "Get",
+                              GLib.Variant("(ss)", (UNIT_IFACE, "ActiveState")))[0]
             if state == "active":
                 return ServiceStatus.RUNNING
             elif state == "failed":
                 return ServiceStatus.FAILED
             else:
                 return ServiceStatus.STOPPED
-        except subprocess.TimeoutExpired:
+        except GLib.Error as e:
+            # GetUnit falha se o serviço nunca foi carregado
+            if "NoSuchUnit" in str(e):
+                return ServiceStatus.STOPPED
+            log.error("get_status DBus error: %s", e)
             return ServiceStatus.UNKNOWN
         except Exception as exc:
             log.error("get_status error: %s", exc)
@@ -56,49 +94,67 @@ class ServiceManager:
 
     def get_status_text(self) -> str:
         try:
-            result = _run(["systemctl", "--user", "status", SERVICE_NAME])
-            return result.stdout or result.stderr or "(no output)"
+            mgr       = _get_systemd()
+            result    = _call(mgr, "GetUnit", GLib.Variant("(s)", (SERVICE_NAME,)))
+            unit_path = result[0]
+            props     = _get_unit_proxy(unit_path)
+
+            active  = _call(props, "Get", GLib.Variant("(ss)", (UNIT_IFACE, "ActiveState")))[0]
+            sub     = _call(props, "Get", GLib.Variant("(ss)", (UNIT_IFACE, "SubState")))[0]
+            desc    = _call(props, "Get", GLib.Variant("(ss)", (UNIT_IFACE, "Description")))[0]
+
+            return f"● {SERVICE_NAME} - {desc}\n   Active: {active} ({sub})"
         except Exception as exc:
             return f"Error: {exc}"
 
     def is_enabled(self) -> bool:
         try:
-            result = _run(["systemctl", "--user", "is-enabled", SERVICE_NAME])
-            return result.stdout.strip() == "enabled"
+            mgr    = _get_systemd()
+            result = _call(mgr, "GetUnitFileState",
+                           GLib.Variant("(s)", (SERVICE_NAME,)))
+            return result[0] == "enabled"
         except Exception:
             return False
 
     def start(self) -> tuple[bool, str]:
-        return self._ctl("start")
+        return self._ctl("StartUnit")
 
     def stop(self) -> tuple[bool, str]:
-        return self._ctl("stop")
+        return self._ctl("StopUnit")
 
     def restart(self) -> tuple[bool, str]:
-        return self._ctl("restart")
+        return self._ctl("RestartUnit")
 
     def enable(self) -> tuple[bool, str]:
-        # SEM --now para não iniciar o serviço automaticamente
-        return self._ctl("enable")
+        try:
+            mgr = _get_systemd()
+            _call(mgr, "EnableUnitFiles",
+                  GLib.Variant("(asbb)", ([SERVICE_NAME], False, False)))
+            _call(mgr, "Reload", None)
+            log.info("enable %s: OK", SERVICE_NAME)
+            return True, ""
+        except Exception as exc:
+            log.warning("enable error: %s", exc)
+            return False, str(exc)
 
     def disable(self) -> tuple[bool, str]:
-        # SEM --now para não parar o serviço automaticamente
-        return self._ctl("disable")
-
-    def _ctl(self, action: str) -> tuple[bool, str]:
         try:
-            result  = _run(["systemctl", "--user", action, SERVICE_NAME])
-            success = result.returncode == 0
-            msg     = (result.stdout or result.stderr or "").strip()
-            if success:
-                log.info("systemctl %s %s: OK", action, SERVICE_NAME)
-            else:
-                log.warning("systemctl %s failed (rc=%d): %s",
-                            action, result.returncode, msg)
-            return success, msg
-        except subprocess.TimeoutExpired:
-            return False, "Timeout."
-        except FileNotFoundError:
-            return False, "systemctl not found."
+            mgr = _get_systemd()
+            _call(mgr, "DisableUnitFiles",
+                  GLib.Variant("(asb)", ([SERVICE_NAME], False)))
+            _call(mgr, "Reload", None)
+            log.info("disable %s: OK", SERVICE_NAME)
+            return True, ""
         except Exception as exc:
+            log.warning("disable error: %s", exc)
+            return False, str(exc)
+
+    def _ctl(self, method: str) -> tuple[bool, str]:
+        try:
+            mgr = _get_systemd()
+            _call(mgr, method, GLib.Variant("(ss)", (SERVICE_NAME, "replace")))
+            log.info("%s %s: OK", method, SERVICE_NAME)
+            return True, ""
+        except Exception as exc:
+            log.warning("%s error: %s", method, exc)
             return False, str(exc)
