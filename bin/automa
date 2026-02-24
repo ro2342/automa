@@ -1,4 +1,5 @@
 #!/bin/sh
-# Atualiza o cache de ícones para o ícone do app aparecer corretamente
-gtk-update-icon-cache /app/share/icons/hicolor 2>/dev/null || true
+# Gera cache de ícones para garantir que todos os simbólicos sejam encontrados
+gtk-update-icon-cache -f -t /usr/share/icons/Adwaita 2>/dev/null || true
+gtk-update-icon-cache -f -t /app/share/icons/hicolor 2>/dev/null || true
 exec python3 /app/share/automa/main.py "$@"
