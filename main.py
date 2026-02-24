@@ -115,6 +115,7 @@ from pages.commands import CommandsPage
 from pages.settings import SettingsPage
 from pages.welcome import WelcomePage
 from css_loader import load_css
+from icon_loader import make_icon, set_icon
 
 APP_ID      = "io.github.ro2342.automa"
 APP_NAME    = "Automa"
@@ -187,28 +188,12 @@ class LNXlinkWindow(Adw.ApplicationWindow):
             ("utilities-terminal-symbolic", _("Commands")),
             ("preferences-system-symbolic", _("Settings")),
         ]
-        import os
-        _base = os.path.dirname(os.path.abspath(__file__))
-        _icons_dir = os.path.join(_base, "data", "icons")
-
-        def _make_icon(name):
-            icon_file = os.path.join(_icons_dir, f"{name}.svg")
-            if os.path.exists(icon_file):
-                # Carrega o SVG como paintable com colorização automática
-                texture = Gtk.IconPaintable.new_for_file(
-                    Gio.File.new_for_path(icon_file), 16, 1
-                )
-                img = Gtk.Image.new_from_paintable(texture)
-            else:
-                img = Gtk.Image.new_from_icon_name(name)
-            img.set_pixel_size(16)
-            img.add_css_class("dim-label")
-            return img
-
         for icon_name, label in nav_items:
             row = Adw.ActionRow()
             row.set_title(label)
-            row.add_prefix(_make_icon(icon_name))
+            img = make_icon(icon_name)
+            img.add_css_class("dim-label")
+            row.add_prefix(img)
             row.set_activatable(True)
             self.list_box.append(row)
 
@@ -227,7 +212,7 @@ class LNXlinkWindow(Adw.ApplicationWindow):
 
         # Botão hamburguer (abre sidebar em modo mobile / tela pequena)
         toggle_btn = Gtk.ToggleButton()
-        toggle_btn.set_child(_make_icon("sidebar-show-symbolic"))
+        toggle_btn.set_child(make_icon("sidebar-show-symbolic"))
         toggle_btn.set_tooltip_text("Toggle Sidebar")
         toggle_btn.set_active(True)
         toggle_btn.connect("toggled", lambda btn: self.split_view.set_show_sidebar(btn.get_active()))
@@ -238,7 +223,8 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         content_bar.set_title_widget(self._page_title)
 
         # Menu ☰ (kebab/hamburger menu) no canto direito
-        menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic")
+        menu_btn = Gtk.MenuButton()
+        menu_btn.set_child(make_icon("open-menu-symbolic"))
         menu_btn.set_tooltip_text("Menu")
         menu = Gio.Menu()
         menu.append(_("Save Config"), "win.save_config")

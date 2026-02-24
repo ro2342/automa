@@ -8,6 +8,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from config_manager import ConfigManager
+from icon_loader import make_icon
 import i18n
 
 
@@ -17,12 +18,14 @@ class CommandRow(Adw.ActionRow):
         self.cmd_data = cmd_data
         self._refresh()
         _ = i18n._
-        edit_btn = Gtk.Button(icon_name="document-edit-symbolic")
+        edit_btn = Gtk.Button()
+        edit_btn.set_child(make_icon("document-edit-symbolic"))
         edit_btn.set_valign(Gtk.Align.CENTER)
         edit_btn.add_css_class("flat")
         edit_btn.connect("clicked", lambda _: on_edit(self))
         self.add_suffix(edit_btn)
-        del_btn = Gtk.Button(icon_name="user-trash-symbolic")
+        del_btn = Gtk.Button()
+        del_btn.set_child(make_icon("user-trash-symbolic"))
         del_btn.set_valign(Gtk.Align.CENTER)
         del_btn.add_css_class("flat")
         del_btn.add_css_class("destructive-action")
@@ -155,7 +158,8 @@ class CommandsPage(Gtk.Box):
         lbl.set_hexpand(True)
         lbl.set_halign(Gtk.Align.START)
         hdr.append(lbl)
-        add_btn = Gtk.Button(label=_("Add Command"), icon_name="list-add-symbolic")
+        add_btn = Gtk.Button(label=_("Add Command"))
+        add_btn.set_child(make_icon("list-add-symbolic"))
         add_btn.add_css_class("suggested-action")
         add_btn.connect("clicked", self._on_add)
         hdr.append(add_btn)

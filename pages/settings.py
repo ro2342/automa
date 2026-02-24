@@ -15,6 +15,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from config_manager import ConfigManager
+from icon_loader import make_icon, set_icon
 import i18n
 
 PREFS_PATH    = Path.home() / ".config" / "automa-gui" / "prefs.json"
@@ -224,7 +225,8 @@ class SettingsPage(Gtk.Box):
         self.mqtt_icon = Gtk.Image()
         self.mqtt_icon.set_pixel_size(16)
         self.mqtt_status_row.add_suffix(self.mqtt_icon)
-        refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic")
+        refresh_btn = Gtk.Button()
+        refresh_btn.set_child(make_icon("view-refresh-symbolic"))
         refresh_btn.add_css_class("flat")
         refresh_btn.set_valign(Gtk.Align.CENTER)
         refresh_btn.connect("clicked", lambda _: self._refresh_startup())
@@ -240,7 +242,7 @@ class SettingsPage(Gtk.Box):
             subtitle=_("Save config.yaml to a custom location"),
             activatable=True,
         )
-        export_row.set_icon_name("document-save-symbolic")
+        export_row.add_prefix(make_icon("document-save-symbolic"))
         export_row.connect("activated", self._on_export)
         backup_group.add(export_row)
 
@@ -249,7 +251,7 @@ class SettingsPage(Gtk.Box):
             subtitle=_("Restore config.yaml from a backup"),
             activatable=True,
         )
-        import_row.set_icon_name("document-open-symbolic")
+        import_row.add_prefix(make_icon("document-open-symbolic"))
         import_row.connect("activated", self._on_import)
         backup_group.add(import_row)
 
@@ -289,10 +291,10 @@ class SettingsPage(Gtk.Box):
 
         if mqtt_ok:
             self.mqtt_status_row.set_subtitle(_("Connected ✓"))
-            self.mqtt_icon.set_from_icon_name("emblem-ok-symbolic")
+            set_icon(self.mqtt_icon, "emblem-ok-symbolic")
         else:
             self.mqtt_status_row.set_subtitle(_("Unreachable — check broker host and port"))
-            self.mqtt_icon.set_from_icon_name("dialog-warning-symbolic")
+            set_icon(self.mqtt_icon, "dialog-warning-symbolic")
         return GLib.SOURCE_REMOVE
 
     def _on_gui_startup(self, row, _):
