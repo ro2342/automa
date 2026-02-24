@@ -1,2 +1,4 @@
 #!/bin/sh
+# Atualiza o cache de ícones para o ícone do app aparecer corretamente
+gtk-update-icon-cache /app/share/icons/hicolor 2>/dev/null || true
 exec python3 /app/share/automa/main.py "$@"
