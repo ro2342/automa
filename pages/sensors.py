@@ -80,7 +80,7 @@ class SensorsPage(Gtk.Box):
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         clamp.set_child(outer)
 
-        hint = Gtk.Label(label=_("Changes are saved and applied automatically."))
+        hint = Gtk.Label(label=_("Changes are saved automatically and the LNXlink service is restarted."))
         hint.set_halign(Gtk.Align.START)
         hint.set_wrap(True)
         hint.add_css_class("dim-label")
@@ -196,8 +196,11 @@ class SensorsPage(Gtk.Box):
 
     def _restart_thread(self):
         _ = i18n._
-        self.service_manager.restart()
-        GLib.idle_add(self._show_status, _("Applied ✓"), True)
+        ok, msg = self.service_manager.restart()
+        if ok:
+            GLib.idle_add(self._show_status, _("Saved and restarted ✓"), True)
+        else:
+            GLib.idle_add(self._show_status, _("Saved — restart failed: check service"), True)
 
     def _show_status(self, msg, done=False):
         self._status_box.set_visible(True)

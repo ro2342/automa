@@ -119,7 +119,7 @@ from icon_loader import make_icon, set_icon, register_icon_theme
 
 APP_ID      = "io.github.ro2342.automa"
 APP_NAME    = "Automa"
-APP_VERSION = "1.0.21"
+APP_VERSION = "1.0.22"
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")

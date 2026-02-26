@@ -394,9 +394,9 @@ mqtt:
   discovery_prefix: homeassistant
   prefix: lnxlink
 
-# Módulos desabilitados (problemáticos em sistemas padrão):
-exclude:
-{chr(10).join(f'  - {m}' for m in default_exclude)}
+modules:
+  exclude:
+{chr(10).join(f'    - {m}' for m in default_exclude)}
 
 custom_commands: []
 update_interval: 5

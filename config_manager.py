@@ -169,20 +169,23 @@ class ConfigManager:
     # ── Sensores ──────────────────────────────────────────────────────
 
     def get_excluded_modules(self) -> list[str]:
-        excl = self.get("exclude", default=None)
+        # LNXlink lê de modules.exclude — tenta primeiro lá
+        excl = self.get("modules", "exclude", default=None)
         if excl is not None:
             return list(excl)
-        # fallback para estrutura antiga
-        excl = self.get("modules", "exclude", default=[])
+        # fallback: chave raiz "exclude" (formato antigo)
+        excl = self.get("exclude", default=[])
         return list(excl) if excl else []
 
     def set_excluded_modules(self, excluded: list[str]):
+        """Salva em modules.exclude — formato que o LNXlink 2026 lê."""
         self._ensure_loaded()
-        self._data["exclude"] = excluded
-        if "modules" in self._data and isinstance(self._data["modules"], dict):
-            self._data["modules"].pop("exclude", None)
-            if not self._data["modules"]:
-                del self._data["modules"]
+        if "modules" not in self._data or not isinstance(self._data["modules"], dict):
+            self._data["modules"] = CommentedMap() if HAS_RUAMEL else {}
+        self._data["modules"]["exclude"] = excluded
+        # Remove chave raiz "exclude" antiga se existir
+        if "exclude" in self._data:
+            del self._data["exclude"]
 
     def is_sensor_enabled(self, sensor_key: str) -> bool:
         return sensor_key not in self.get_excluded_modules()

@@ -308,13 +308,19 @@ class SettingsPage(Gtk.Box):
         _ = i18n._
         try:
             action = "enable" if row.get_active() else "disable"
-            subprocess.run(_sys_cmd(["systemctl", "--user", action, "lnxlink.service"]),
-                           capture_output=True, timeout=5)
+            r = subprocess.run(_sys_cmd(["systemctl", "--user", action, "lnxlink.service"]),
+                               capture_output=True, text=True, timeout=5)
+            if r.returncode != 0:
+                raise RuntimeError(r.stderr.strip() or r.stdout.strip())
             msg = (_("LNXlink service enabled on startup.") if row.get_active()
                    else _("LNXlink service disabled from startup."))
             self.show_toast_cb(msg)
+            # Relê o estado após 1s para confirmar que persistiu
+            GLib.timeout_add(1000, lambda: (self._refresh_startup(), GLib.SOURCE_REMOVE)[1])
         except Exception as e:
             self.show_toast_cb(f"Error: {e}", is_error=True)
+            # Reverte o toggle visualmente
+            GLib.idle_add(self._refresh_startup)
 
     # ── Backup ────────────────────────────────────────────────────────
 
