@@ -15,9 +15,11 @@ import i18n
 
 class MqttConfigPage(Gtk.Box):
 
-    def __init__(self, config_manager: ConfigManager):
+    def __init__(self, config_manager: ConfigManager, save_cb=None, service_manager=None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.config_manager = config_manager
+        self.config_manager  = config_manager
+        self.save_cb         = save_cb          # chamado após salvar
+        self.service_manager = service_manager
         self._build_ui()
         self.connect("realize", lambda _: self._load_values())
 
@@ -74,7 +76,15 @@ class MqttConfigPage(Gtk.Box):
         disc_group.add(self.disc_prefix_row)
         disc_group.add(self.prefix_row)
 
-        note = Gtk.Label(label=_("Changes take effect after restarting the LNXlink service."))
+        # Botão Save
+        save_btn = Gtk.Button(label=_("Save & Restart Service"))
+        save_btn.add_css_class("suggested-action")
+        save_btn.add_css_class("pill")
+        save_btn.set_halign(Gtk.Align.END)
+        save_btn.connect("clicked", self._on_save)
+        box.append(save_btn)
+
+        note = Gtk.Label(label=_("Save applies changes and restarts the LNXlink service."))
         note.add_css_class("dim-label")
         note.add_css_class("caption")
         note.set_halign(Gtk.Align.START)
@@ -111,3 +121,21 @@ class MqttConfigPage(Gtk.Box):
             discovery_prefix = self.disc_prefix_row.get_text().strip() or "homeassistant",
             prefix           = self.prefix_row.get_text().strip() or "lnxlink",
         )
+
+    def _on_save(self, _btn):
+        import threading
+        _ = i18n._
+        self.apply_to_config()
+        self.config_manager.save()
+        if self.save_cb:
+            self.save_cb(_("MQTT settings saved!"))
+        if self.service_manager:
+            def _restart():
+                ok, err = self.service_manager.restart()
+                if self.save_cb:
+                    from gi.repository import GLib
+                    if ok:
+                        GLib.idle_add(self.save_cb, _("MQTT saved and service restarted!"))
+                    else:
+                        GLib.idle_add(self.save_cb, _("MQTT saved — restart failed: {e}").format(e=err))
+            threading.Thread(target=_restart, daemon=True).start()
