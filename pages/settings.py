@@ -15,6 +15,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from config_manager import ConfigManager
+from service_manager import ServiceManager
 from icon_loader import make_icon
 import i18n
 
@@ -76,10 +77,10 @@ def _sys_cmd(args: list) -> list:
 
 
 def is_lnxlink_service_autostart_enabled() -> bool:
+    # Mantida por compatibilidade mas não usada — SettingsPage usa service_manager
     try:
-        r = subprocess.run(_sys_cmd(["systemctl", "--user", "is-enabled", "lnxlink.service"]),
-                           capture_output=True, text=True, timeout=5)
-        return r.stdout.strip() == "enabled"
+        from service_manager import ServiceManager
+        return ServiceManager().is_enabled()
     except Exception:
         return False
 
@@ -97,10 +98,11 @@ def is_mqtt_broker_reachable(config_manager: ConfigManager) -> bool:
 
 class SettingsPage(Gtk.Box):
 
-    def __init__(self, config_manager: ConfigManager, show_toast_cb=None):
+    def __init__(self, config_manager: ConfigManager, show_toast_cb=None, service_manager=None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.config_manager = config_manager
-        self.show_toast_cb  = show_toast_cb or (lambda msg, **kw: None)
+        self.config_manager  = config_manager
+        self.service_manager = service_manager
+        self.show_toast_cb   = show_toast_cb or (lambda msg, **kw: None)
         self._prefs = load_prefs()
         self._build_ui()
         self.connect("realize", lambda _: self._refresh_startup())
@@ -272,7 +274,8 @@ class SettingsPage(Gtk.Box):
 
     def _check_thread(self):
         gui_ok     = is_gui_autostart_enabled()
-        service_ok = is_lnxlink_service_autostart_enabled()
+        service_ok = (self.service_manager.is_enabled()
+                      if self.service_manager else is_lnxlink_service_autostart_enabled())
         mqtt_ok    = is_mqtt_broker_reachable(self.config_manager)
         GLib.idle_add(self._update_startup_ui, gui_ok, service_ok, mqtt_ok)
 
@@ -306,21 +309,28 @@ class SettingsPage(Gtk.Box):
 
     def _on_service_startup(self, row, _):
         _ = i18n._
-        try:
-            action = "enable" if row.get_active() else "disable"
-            r = subprocess.run(_sys_cmd(["systemctl", "--user", action, "lnxlink.service"]),
-                               capture_output=True, text=True, timeout=5)
-            if r.returncode != 0:
-                raise RuntimeError(r.stderr.strip() or r.stdout.strip())
-            msg = (_("LNXlink service enabled on startup.") if row.get_active()
-                   else _("LNXlink service disabled from startup."))
-            self.show_toast_cb(msg)
-            # Relê o estado após 1s para confirmar que persistiu
-            GLib.timeout_add(1000, lambda: (self._refresh_startup(), GLib.SOURCE_REMOVE)[1])
-        except Exception as e:
-            self.show_toast_cb(f"Error: {e}", is_error=True)
-            # Reverte o toggle visualmente
-            GLib.idle_add(self._refresh_startup)
+        if self.service_manager:
+            fn  = self.service_manager.enable if row.get_active() else self.service_manager.disable
+            ok, err = fn()
+            if ok:
+                msg = (_("LNXlink service enabled on startup.") if row.get_active()
+                       else _("LNXlink service disabled from startup."))
+                self.show_toast_cb(msg)
+            else:
+                self.show_toast_cb(f"Error: {err}", is_error=True)
+            GLib.timeout_add(800, lambda: (self._refresh_startup(), GLib.SOURCE_REMOVE)[1])
+        else:
+            # fallback fora do Flatpak
+            try:
+                action = "enable" if row.get_active() else "disable"
+                r = subprocess.run(["systemctl", "--user", action, "lnxlink.service"],
+                                   capture_output=True, text=True, timeout=5)
+                if r.returncode != 0:
+                    raise RuntimeError(r.stderr.strip())
+                self.show_toast_cb(_("Done."))
+            except Exception as e:
+                self.show_toast_cb(f"Error: {e}", is_error=True)
+            GLib.timeout_add(800, lambda: (self._refresh_startup(), GLib.SOURCE_REMOVE)[1])
 
     # ── Backup ────────────────────────────────────────────────────────
 

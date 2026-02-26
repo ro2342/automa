@@ -186,6 +186,7 @@ class ConfigManager:
         # Remove chave raiz "exclude" antiga se existir
         if "exclude" in self._data:
             del self._data["exclude"]
+        log.info("set_excluded_modules: %s", excluded)
 
     def is_sensor_enabled(self, sensor_key: str) -> bool:
         return sensor_key not in self.get_excluded_modules()
