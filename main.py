@@ -119,7 +119,7 @@ from icon_loader import make_icon, set_icon, register_icon_theme
 
 APP_ID      = "io.github.ro2342.automa"
 APP_NAME    = "Automa"
-APP_VERSION = "1.0.24"
+APP_VERSION = "1.1.0"
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -348,16 +348,28 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         return False
 
     def _on_about(self):
-        Adw.AboutWindow(
+        win = Adw.AboutWindow(
             transient_for=self,
             application_name=APP_NAME,
             application_icon=APP_ID,
             version=APP_VERSION,
-            developer_name="LNXlink GUI Contributors",
+            developer_name="Rod Carvalho",
+            developers=["Rod Carvalho https://github.com/ro2342"],
             license_type=Gtk.License.GPL_3_0,
-            website="https://github.com/bkbilly/lnxlink",
-            comments="GNOME/GTK4 control panel for the LNXlink MQTT agent.",
-        ).present()
+            website="https://github.com/ro2342/automa",
+            issue_url="https://github.com/ro2342/automa/issues",
+            comments=(
+                "A GNOME graphical interface for LNXlink — "
+                "the open-source MQTT agent for Home Assistant.\n\n"
+                "Built with free and open-source software: "
+                "GTK4, libadwaita, Python, LNXlink, Mosquitto MQTT."
+            ),
+        )
+        win.add_acknowledgement_section(
+            "Built on top of",
+            ["LNXlink by bkbilly https://github.com/bkbilly/lnxlink"],
+        )
+        win.present()
 
     def _show_toast(self, message: str, is_error: bool = False):
         toast = Adw.Toast(title=message, timeout=4)

@@ -177,10 +177,26 @@ class ConfigManager:
         return list(excl) if excl else []
 
     def set_excluded_modules(self, excluded: list[str]):
-        """Salva em "exclude:" na raiz — único lugar que o LNXlink realmente lê."""
+        """
+        Atualiza exclude: na raiz de forma cirúrgica.
+        Só mexe nos módulos que o app conhece — preserva o resto
+        (gpio, inference_time, ir_remote, etc.) que o LNXlink gerencia.
+        """
         self._ensure_loaded()
-        self._data["exclude"] = excluded
-        log.info("set_excluded_modules → exclude: %s", excluded)
+        from pages.sensors import OUR_MODULES
+
+        current = list(self.get("exclude", default=[]) or [])
+
+        # Remove da lista os módulos que o app conhece
+        updated = [m for m in current if m not in OUR_MODULES]
+
+        # Adiciona os que o usuário desabilitou
+        for m in excluded:
+            if m not in updated:
+                updated.append(m)
+
+        self._data["exclude"] = updated
+        log.info("set_excluded_modules → exclude: %s", updated)
 
     def is_sensor_enabled(self, sensor_key: str) -> bool:
         return sensor_key not in self.get_excluded_modules()

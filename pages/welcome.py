@@ -24,17 +24,19 @@ class WelcomePage(Gtk.Box):
     para que a janela pai possa fechar este diálogo e mostrar a UI normal.
     """
 
-    def __init__(self, on_installed_cb, on_skip_cb=None):
+    def __init__(self, on_installed_cb, on_skip_cb=None, on_close_cb=None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.on_installed_cb = on_installed_cb
-        self.on_skip_cb = on_skip_cb or on_installed_cb
+        self.on_skip_cb      = on_skip_cb or on_installed_cb
+        self.on_close_cb     = on_close_cb
         self._installer: LNXlinkInstaller | None = None
-        self._installing = False
+        self._installing     = False
         self._build_ui()
 
     def _build_ui(self):
         from i18n import _
         distro = detect_distro()
+        already_installed = is_lnxlink_installed()
 
         self.set_vexpand(True)
 
@@ -51,24 +53,45 @@ class WelcomePage(Gtk.Box):
         box.set_valign(Gtk.Align.CENTER)
         clamp.set_child(box)
 
+        # Botão fechar (canto superior direito)
+        if self.on_close_cb:
+            close_btn = Gtk.Button()
+            close_btn.set_child(make_icon("window-close-symbolic", 16))
+            close_btn.add_css_class("flat")
+            close_btn.set_halign(Gtk.Align.END)
+            close_btn.connect("clicked", lambda _: self.on_close_cb())
+            box.append(close_btn)
+
         # Ícone
-        icon = make_icon("computer-symbolic", size=80)
+        icon_name = "emblem-ok-symbolic" if already_installed else "computer-symbolic"
+        icon = make_icon(icon_name, size=80)
         icon.add_css_class("dim-label")
         box.append(icon)
 
         # Título
-        title = Gtk.Label(label=_("LNXlink not found"))
+        if already_installed:
+            title_text = _("LNXlink is installed")
+        else:
+            title_text = _("LNXlink not found")
+        title = Gtk.Label(label=title_text)
         title.add_css_class("title-1")
         title.set_justify(Gtk.Justification.CENTER)
         box.append(title)
 
         # Subtítulo
         subtitle = Gtk.Label()
-        subtitle.set_markup(
-            _("LNXlink is not installed on this system.\nDetected distro: {distro}").format(
-                distro=f"<b>{distro.name}</b>"
+        if already_installed:
+            subtitle.set_markup(
+                _("LNXlink is already installed on this system.\nDetected distro: {distro}").format(
+                    distro=f"<b>{distro.name}</b>"
+                )
             )
-        )
+        else:
+            subtitle.set_markup(
+                _("LNXlink is not installed on this system.\nDetected distro: {distro}").format(
+                    distro=f"<b>{distro.name}</b>"
+                )
+            )
         subtitle.set_justify(Gtk.Justification.CENTER)
         subtitle.set_wrap(True)
         box.append(subtitle)
@@ -127,8 +150,12 @@ class WelcomePage(Gtk.Box):
         btn_box.set_halign(Gtk.Align.CENTER)
         box.append(btn_box)
 
-        self.skip_btn = Gtk.Button(label=_("Skip (LNXlink already installed)"))
+        skip_label = _("Close") if already_installed else _("Skip (LNXlink already installed)")
+        self.skip_btn = Gtk.Button(label=skip_label)
         self.skip_btn.connect("clicked", self._on_skip)
+        if already_installed:
+            self.skip_btn.add_css_class("suggested-action")
+            self.skip_btn.add_css_class("pill")
         btn_box.append(self.skip_btn)
 
         self.cancel_btn = Gtk.Button(label=_("Cancel"))
@@ -155,7 +182,10 @@ class WelcomePage(Gtk.Box):
     # ------------------------------------------------------------------ #
 
     def _on_skip(self, _btn):
-        self.on_skip_cb()
+        if self.on_close_cb:
+            self.on_close_cb()
+        else:
+            self.on_skip_cb()
 
     def _on_cancel(self, _btn):
         if self._installer:

@@ -199,7 +199,7 @@ class SensorsPage(Gtk.Box):
         if self._restart_timer is not None:
             GLib.source_remove(self._restart_timer)
         self._show_status(i18n._("Saving…"))
-        self._restart_timer = GLib.timeout_add(1500, self._apply)
+        self._restart_timer = GLib.timeout_add(600, self._apply)
 
     def _apply(self):
         self._restart_timer = None
