@@ -15,7 +15,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from config_manager import ConfigManager
-from icon_loader import make_icon, set_icon
+from icon_loader import make_icon
 import i18n
 
 PREFS_PATH    = Path.home() / ".config" / "automa-gui" / "prefs.json"
@@ -222,9 +222,6 @@ class SettingsPage(Gtk.Box):
             title=_("MQTT Broker"),
             subtitle=_("Checking connection…"),
         )
-        self.mqtt_icon = Gtk.Image()
-        self.mqtt_icon.set_pixel_size(16)
-        self.mqtt_status_row.add_suffix(self.mqtt_icon)
         refresh_btn = Gtk.Button()
         refresh_btn.set_child(make_icon("view-refresh-symbolic"))
         refresh_btn.add_css_class("flat")
@@ -291,10 +288,10 @@ class SettingsPage(Gtk.Box):
 
         if mqtt_ok:
             self.mqtt_status_row.set_subtitle(_("Connected ✓"))
-            set_icon(self.mqtt_icon, "emblem-ok-symbolic")
+
         else:
             self.mqtt_status_row.set_subtitle(_("Unreachable — check broker host and port"))
-            set_icon(self.mqtt_icon, "dialog-warning-symbolic")
+
         return GLib.SOURCE_REMOVE
 
     def _on_gui_startup(self, row, _):
