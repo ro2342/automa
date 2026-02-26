@@ -115,11 +115,11 @@ from pages.commands import CommandsPage
 from pages.settings import SettingsPage
 from pages.welcome import WelcomePage
 from css_loader import load_css
-from icon_loader import make_icon, set_icon
+from icon_loader import make_icon, set_icon, register_icon_theme
 
 APP_ID      = "io.github.ro2342.automa"
 APP_NAME    = "Automa"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.19"
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -374,6 +374,7 @@ class LNXlinkApp(Adw.Application):
     def do_startup(self):
         Adw.Application.do_startup(self)
         apply_theme(_prefs.get("theme", "system"))
+        register_icon_theme()  # registra data/icons/ no IconTheme
         load_css()
 
         quit_action = Gio.SimpleAction.new("quit", None)

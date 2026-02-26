@@ -4,6 +4,10 @@ icon_loader.py — Carrega ícones simbólicos do diretório bundled data/icons/
 Registra data/icons/ no Gtk.IconTheme padrão para que todos os ícones
 sejam encontrados por nome e herdem cor automaticamente em qualquer
 contexto GTK (prefix de EntryRow, botões, sidebar, etc.).
+
+Uso:
+  - Chamar register_icon_theme() UMA VEZ em do_startup() do app (main.py)
+  - Depois usar make_icon() e set_icon() normalmente em qualquer widget
 """
 
 from pathlib import Path
@@ -16,8 +20,12 @@ _ICONS_DIR = Path(__file__).parent / "data" / "icons"
 _registered = False
 
 
-def _ensure_registered():
-    """Registra data/icons/ no IconTheme padrão (executa uma só vez)."""
+def register_icon_theme():
+    """
+    Registra data/icons/ no IconTheme padrão.
+    DEVE ser chamado em do_startup() do Adw.Application, antes de
+    qualquer widget ser criado. Executa uma só vez.
+    """
     global _registered
     if _registered:
         return
@@ -25,7 +33,13 @@ def _ensure_registered():
     if display and _ICONS_DIR.is_dir():
         theme = Gtk.IconTheme.get_for_display(display)
         theme.add_search_path(str(_ICONS_DIR))
-    _registered = True
+        _registered = True
+
+
+def _ensure_registered():
+    """Fallback: tenta registrar se ainda não foi feito."""
+    if not _registered:
+        register_icon_theme()
 
 
 def make_icon(name: str, size: int = 16) -> Gtk.Image:
