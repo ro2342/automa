@@ -394,9 +394,8 @@ mqtt:
   discovery_prefix: homeassistant
   prefix: lnxlink
 
-modules:
-  exclude:
-{chr(10).join(f'    - {m}' for m in default_exclude)}
+exclude:
+{chr(10).join(f'- {m}' for m in default_exclude)}
 
 custom_commands: []
 update_interval: 5

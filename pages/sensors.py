@@ -1,6 +1,6 @@
 """
-pages/sensors.py - Sensores. Todas as strings via i18n._().
-Auto-restart ao toggle com debounce de 1.5s.
+pages/sensors.py - Sensores. Nomes dos módulos baseados no LNXlink real.
+Lê/escreve em "exclude:" na raiz do config.yaml — único lugar que o LNXlink lê.
 """
 
 import threading
@@ -12,44 +12,61 @@ from gi.repository import Gtk, Adw, GLib
 from config_manager import ConfigManager
 import i18n
 
-# Módulos: chave → (nome_i18n_key, desc_i18n_key, categoria)
-# Usamos keys fixas e traduzimos na hora para suportar troca de idioma
+# Módulos reais do LNXlink baseados no config.yaml gerado pelo LNXlink
+# Chave = nome exato usado no exclude: do LNXlink
+# (nome_exibição, descrição, grupo)
 MODULES = {
-    "bash":          ("Bash Commands",   "Run custom bash scripts from HA",                          "supported"),
-    "bluetooth":     ("Bluetooth",       "Connected bluetooth devices",                               "supported"),
-    "camera_used":   ("Camera In Use",   "Detects if any camera is being used — no OpenCV needed",   "supported"),
-    "clipboard":     ("Clipboard",       "Read/write system clipboard",                               "supported"),
-    "cpu":           ("CPU Usage",       "Usage % per core",                                          "supported"),
-    "disk":          ("Disk Usage",      "Usage % per mount point",                                   "supported"),
-    "fan":           ("Fan Speed",       "RPM from hardware sensors",                                 "supported"),
-    "memory":        ("Memory Usage",    "RAM and swap usage %",                                      "supported"),
-    "microphone":    ("Microphone",      "Detects if mic is in use",                                  "supported"),
-    "monitor":       ("Monitor",         "Connected displays info",                                   "supported"),
-    "network":       ("Network Stats",   "Bytes sent/received per interface",                         "supported"),
-    "power_profile": ("Power Profile",   "Active power profile (balanced / performance)",             "supported"),
-    "screenshot":    ("Screenshot",      "Take screenshots triggered from HA",                        "supported"),
-    "speakers":      ("Speaker Volume",  "Current volume level and mute state",                       "supported"),
-    "battery":       ("Battery",         "Charge level — laptops only",                              "optional"),
-    "gpu":           ("GPU Usage",       "Requires compatible GPU drivers",                           "optional"),
-    "idle":          ("Idle Status",     "Detects if session is idle",                               "optional"),
-    "media":         ("Media Player",    "Current track via MPRIS",                                   "optional"),
-    "notify":        ("Notifications",   "Send desktop notifications from HA",                        "optional"),
-    "webcam":        ("Webcam Capture",  "May fail with multiple /dev/video* — use Camera In Use instead", "advanced"),
-    "wifi":          ("Wi-Fi Info",      "Requires passwordless sudo ethtool",                        "advanced"),
-    "wol":           ("Wake-on-LAN",     "Requires passwordless sudo ethtool",                        "advanced"),
-    "docker":        ("Docker",          "Requires Docker installed and running",                     "advanced"),
-    "steam":         ("Steam",           "Requires Steam installed and running",                      "advanced"),
+    # ── System ──────────────────────────────────────────────────────
+    "cpu":               ("CPU Usage",        "Usage % per core",                          "System"),
+    "memory":            ("Memory Usage",      "RAM and swap usage %",                      "System"),
+    "disk_usage":        ("Disk Usage",        "Usage % per mount point",                   "System"),
+    "disk_io":           ("Disk I/O",          "Read/write bytes per disk",                 "System"),
+    "fan":               ("Fan Speed",         "RPM from hardware sensors",                 "System"),
+    "gpu":               ("GPU Usage",         "Requires compatible GPU drivers",           "System"),
+    "battery":           ("Battery",           "Charge level — laptops only",              "System"),
+    "power_profile":     ("Power Profile",     "Active power profile (balanced/perf)",      "System"),
+    # ── Desktop ─────────────────────────────────────────────────────
+    "media":             ("Media Player",      "Current track via MPRIS",                   "Desktop"),
+    "speakers":          ("Speaker Volume",    "Current volume and mute state",             "Desktop"),
+    "microphone":        ("Microphone",        "Detects if mic is in use",                  "Desktop"),
+    "idle":              ("Idle Status",       "Detects if session is idle",                "Desktop"),
+    "monitor":           ("Monitor",           "Connected displays info",                   "Desktop"),
+    "clipboard":         ("Clipboard",         "Read/write system clipboard",               "Desktop"),
+    "notify":            ("Notifications",     "Send desktop notifications from HA",        "Desktop"),
+    "screenshot":        ("Screenshot",        "Take screenshots triggered from HA",        "Desktop"),
+    "brightness":        ("Brightness",        "Screen brightness control",                 "Desktop"),
+    "screen_onoff":      ("Screen On/Off",     "Turn monitor on or off from HA",           "Desktop"),
+    "fullscreen":        ("Fullscreen",        "Detects if app is fullscreen",             "Desktop"),
+    "mouse":             ("Mouse",             "Mouse position and control",                "Desktop"),
+    "audio_select":      ("Audio Select",      "Switch audio input/output devices",        "Desktop"),
+    # ── Connectivity ────────────────────────────────────────────────
+    "network":           ("Network Stats",     "Bytes sent/received per interface",         "Connectivity"),
+    "bluetooth":         ("Bluetooth",         "Connected bluetooth devices",               "Connectivity"),
+    # ── Automation ──────────────────────────────────────────────────
+    "bash":              ("Bash Commands",     "Run custom bash scripts from HA",           "Automation"),
+    "camera_used":       ("Camera In Use",     "Detects if any camera is being used",      "Automation"),
+    "send_keys":         ("Send Keys",         "Send keyboard shortcuts from HA",           "Automation"),
+    "xdg_open":          ("Open URLs",         "Open URLs/files from HA",                  "Automation"),
+    "mounts":            ("Mounts",            "Auto-mount directories",                    "Automation"),
+    # ── Advanced ────────────────────────────────────────────────────
+    "webcam":            ("Webcam Capture",    "May fail with multiple /dev/video*",        "Advanced"),
+    "systemd":           ("Systemd Units",     "Control systemd services from HA",          "Advanced"),
+    "keep_alive":        ("Keep Alive",        "Periodic MQTT ping",                       "Advanced"),
+    "boot_select":       ("Boot Select",       "Switch boot target from HA",               "Advanced"),
+    "restful":           ("RESTful API",       "Local HTTP API on port 8112",              "Advanced"),
 }
 
-DEFAULT_EXCLUDED = {"webcam", "wifi", "wol", "docker", "steam"}
-
-GROUPS = {
-    "System":       ["cpu", "memory", "disk", "fan", "gpu", "battery", "power_profile"],
-    "Desktop":      ["idle", "media", "speakers", "microphone", "monitor", "clipboard", "notify", "screenshot"],
-    "Connectivity": ["network", "bluetooth"],
-    "Automation":   ["bash", "camera_used"],
+# Módulos desabilitados por padrão pelo próprio LNXlink
+# (aparecem no exclude: quando o LNXlink gera o config pela primeira vez)
+DEFAULT_EXCLUDED = {
+    "audio_select", "battery", "beacondb", "boot_select", "brightness",
+    "fullscreen", "gpio", "gpu", "idle", "inference_time", "ir_remote",
+    "keep_alive", "keyboard_hotkeys", "media", "mouse", "notify",
+    "power_profile", "restful", "screen_onoff", "screenshot", "send_keys",
+    "speech_recognition", "systemd", "webcam", "xdg_open",
 }
-ADVANCED_KEYS = ["webcam", "wifi", "wol", "docker", "steam"]
+
+GROUPS = ["System", "Desktop", "Connectivity", "Automation", "Advanced"]
 
 
 class SensorsPage(Gtk.Box):
@@ -59,8 +76,8 @@ class SensorsPage(Gtk.Box):
         self.config_manager  = config_manager
         self.service_manager = service_manager
         self._rows: dict[str, Adw.SwitchRow] = {}
-        self._loading       = False
-        self._restart_timer = None
+        self._loading        = False
+        self._restart_timer  = None
         self._build_ui()
         self.connect("realize", lambda _: self._load_values())
 
@@ -80,14 +97,16 @@ class SensorsPage(Gtk.Box):
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         clamp.set_child(outer)
 
-        hint = Gtk.Label(label=_("Changes are saved automatically and the LNXlink service is restarted."))
+        hint = Gtk.Label(label=_(
+            "Changes are saved automatically and the LNXlink service is restarted."
+        ))
         hint.set_halign(Gtk.Align.START)
         hint.set_wrap(True)
         hint.add_css_class("dim-label")
         hint.add_css_class("caption")
         outer.append(hint)
 
-        # Status spinner discreto
+        # Status
         self._status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self._status_box.set_halign(Gtk.Align.END)
         self._status_box.set_visible(False)
@@ -112,40 +131,36 @@ class SensorsPage(Gtk.Box):
         btn_box.append(btn_none)
         outer.append(btn_box)
 
+        # Cria grupos
         placed: set[str] = set()
-        for group_name, keys in GROUPS.items():
-            group = Adw.PreferencesGroup(title=_(group_name))
-            outer.append(group)
-            for key in keys:
-                if key in MODULES:
+        for group_name in GROUPS:
+            keys = [k for k, v in MODULES.items() if v[2] == group_name]
+            if not keys:
+                continue
+            if group_name == "Advanced":
+                adv_group = Adw.PreferencesGroup()
+                outer.append(adv_group)
+                expander = Adw.ExpanderRow(
+                    title=_("Advanced"),
+                    subtitle=_("Modules that may require extra configuration"),
+                )
+                expander.set_expanded(False)
+                adv_group.add(expander)
+                for key in keys:
+                    row = self._make_row(key)
+                    expander.add_row(row)
+                    self._rows[key] = row
+                    placed.add(key)
+            else:
+                group = Adw.PreferencesGroup(title=_(group_name))
+                outer.append(group)
+                for key in keys:
                     self._add_row(group, key)
                     placed.add(key)
 
-        adv_group = Adw.PreferencesGroup()
-        outer.append(adv_group)
-        self._expander = Adw.ExpanderRow(
-            title=_("Advanced"),
-            subtitle=_("Modules that may require extra configuration — disabled by default"),
-        )
-        self._expander.set_expanded(False)
-        adv_group.add(self._expander)
-        for key in ADVANCED_KEYS:
-            if key in MODULES:
-                row = self._make_row(key)
-                self._expander.add_row(row)
-                self._rows[key] = row
-                placed.add(key)
-
-        remaining = [k for k in MODULES if k not in placed]
-        if remaining:
-            other = Adw.PreferencesGroup(title=_("Other"))
-            outer.append(other)
-            for key in remaining:
-                self._add_row(other, key)
-
     def _make_row(self, key: str) -> Adw.SwitchRow:
         _ = i18n._
-        name, desc, _cat = MODULES[key]
+        name, desc, _ = MODULES[key]
         row = Adw.SwitchRow(title=_(name), subtitle=_(desc))
         row.set_active(key not in DEFAULT_EXCLUDED)
         row.connect("notify::active", self._on_toggle)
@@ -157,6 +172,7 @@ class SensorsPage(Gtk.Box):
         self._rows[key] = row
 
     def _load_values(self):
+        """Lê o exclude: atual do config e aplica nos toggles."""
         self._loading = True
         excluded = self.config_manager.get_excluded_modules()
         for key, row in self._rows.items():
@@ -196,11 +212,11 @@ class SensorsPage(Gtk.Box):
 
     def _restart_thread(self):
         _ = i18n._
-        ok, msg = self.service_manager.restart()
+        ok, _ = self.service_manager.restart()
         if ok:
             GLib.idle_add(self._show_status, _("Saved and restarted ✓"), True)
         else:
-            GLib.idle_add(self._show_status, _("Saved — restart failed: check service"), True)
+            GLib.idle_add(self._show_status, _("Saved — restart failed, check service"), True)
 
     def _show_status(self, msg, done=False):
         self._status_box.set_visible(True)
@@ -208,9 +224,11 @@ class SensorsPage(Gtk.Box):
         self._status_spinner.set_visible(not done)
         self._status_spinner.set_spinning(not done)
         if done:
-            GLib.timeout_add(2000, lambda: (self._status_box.set_visible(False), GLib.SOURCE_REMOVE)[1])
+            GLib.timeout_add(3000, lambda: (
+                self._status_box.set_visible(False), GLib.SOURCE_REMOVE)[1])
         return GLib.SOURCE_REMOVE
 
     def apply_to_config(self):
+        """Salva lista de módulos desabilitados em exclude: na raiz."""
         excluded = [k for k, row in self._rows.items() if not row.get_active()]
         self.config_manager.set_excluded_modules(excluded)
