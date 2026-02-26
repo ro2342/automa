@@ -227,9 +227,10 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         menu_btn.set_child(make_icon("open-menu-symbolic"))
         menu_btn.set_tooltip_text("Menu")
         menu = Gio.Menu()
-        menu.append(_("Save Config"), "win.save_config")
-        menu.append(_("About"),       "win.about")
-        menu.append(_("Quit"),        "app.quit")
+        menu.append(_("Save Config"),      "win.save_config")
+        menu.append(_("Setup Assistant"),  "win.setup_assistant")
+        menu.append(_("About"),            "win.about")
+        menu.append(_("Quit"),             "app.quit")
         menu_btn.set_menu_model(menu)
         content_bar.pack_end(menu_btn)
 
@@ -272,13 +273,23 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         about_action.connect("activate", lambda *_: self._on_about())
         self.add_action(about_action)
 
+        setup_action = Gio.SimpleAction.new("setup_assistant", None)
+        setup_action.connect("activate", lambda *_: self._show_welcome())
+        self.add_action(setup_action)
+
     # ------------------------------------------------------------------ #
     #  Welcome dialog                                                      #
     # ------------------------------------------------------------------ #
 
     def _show_welcome(self):
+        # Fecha o dialog anterior se ainda estiver aberto
+        if hasattr(self, "_welcome_dialog") and self._welcome_dialog:
+            try:
+                self._welcome_dialog.close()
+            except Exception:
+                pass
         self._welcome_dialog = Adw.Dialog()
-        self._welcome_dialog.set_title("Initial Setup")
+        self._welcome_dialog.set_title("Setup Assistant")
         self._welcome_dialog.set_content_width(600)
         self._welcome_dialog.set_content_height(700)
         welcome = WelcomePage(

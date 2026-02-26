@@ -10,6 +10,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from service_manager import ServiceManager, ServiceStatus
+from icon_loader import make_icon
 import i18n
 
 
@@ -87,7 +88,7 @@ class DashboardPage(Gtk.Box):
         controls_group.add(self.autostart_row)
 
         refresh_row = Adw.ActionRow(title=_("Refresh Status"), activatable=True)
-        refresh_row.set_icon_name("view-refresh-symbolic")
+        refresh_row.add_prefix(make_icon("view-refresh-symbolic"))
         refresh_row.connect("activated", lambda _: self.refresh_status())
         controls_group.add(refresh_row)
 
@@ -119,7 +120,7 @@ class DashboardPage(Gtk.Box):
 
     def _make_btn(self, label, icon, style):
         btn = Gtk.Button(label=label)
-        btn.set_icon_name(icon)
+        btn.set_child(make_icon(icon))
         btn.add_css_class("control-btn")
         if style:
             btn.add_css_class(style)

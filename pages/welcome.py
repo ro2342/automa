@@ -14,6 +14,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
 from installer import LNXlinkInstaller, detect_distro, is_lnxlink_installed
+from icon_loader import make_icon
 
 
 class WelcomePage(Gtk.Box):
@@ -51,8 +52,7 @@ class WelcomePage(Gtk.Box):
         clamp.set_child(box)
 
         # Ícone
-        icon = Gtk.Image.new_from_icon_name("computer-symbolic")
-        icon.set_pixel_size(80)
+        icon = make_icon("computer-symbolic", size=80)
         icon.add_css_class("dim-label")
         box.append(icon)
 
@@ -78,10 +78,10 @@ class WelcomePage(Gtk.Box):
         box.append(steps_group)
 
         items = [
-            ("package-x-generic-symbolic",
+            ("folder-symbolic",
              _("System dependencies"),
              _("gcc, cmake and audio libs ({family})").format(family=distro.family)),
-            ("application-x-executable-symbolic",
+            ("applications-system-symbolic",
              _("pipx"),
              _("Isolated Python app manager")),
             ("go-home-symbolic",
@@ -90,9 +90,7 @@ class WelcomePage(Gtk.Box):
         ]
         for icon_name, row_title, row_sub in items:
             row = Adw.ActionRow(title=row_title, subtitle=row_sub)
-            img = Gtk.Image.new_from_icon_name(icon_name)
-            img.set_pixel_size(16)
-            row.add_prefix(img)
+            row.add_prefix(make_icon(icon_name))
             steps_group.add(row)
 
         # Aviso sudo
