@@ -160,7 +160,7 @@ class SensorsPage(Gtk.Box):
 
     def _make_row(self, key: str) -> Adw.SwitchRow:
         _ = i18n._
-        name, desc, _ = MODULES[key]
+        name, desc, _cat = MODULES[key]
         row = Adw.SwitchRow(title=_(name), subtitle=_(desc))
         row.set_active(key not in DEFAULT_EXCLUDED)
         row.connect("notify::active", self._on_toggle)
