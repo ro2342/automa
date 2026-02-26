@@ -1,45 +1,46 @@
 """
 icon_loader.py — Carrega ícones simbólicos do diretório bundled data/icons/.
-Garante compatibilidade com o sandbox Flatpak onde os ícones do sistema
-podem não estar disponíveis.
+
+Registra data/icons/ no Gtk.IconTheme padrão para que todos os ícones
+sejam encontrados por nome e herdem cor automaticamente em qualquer
+contexto GTK (prefix de EntryRow, botões, sidebar, etc.).
 """
 
-import os
 from pathlib import Path
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Gio
+gi.require_version("Gdk", "4.0")
+from gi.repository import Gtk, Gdk
 
-# Caminho absoluto para data/icons/ relativo a este arquivo
 _ICONS_DIR = Path(__file__).parent / "data" / "icons"
+_registered = False
+
+
+def _ensure_registered():
+    """Registra data/icons/ no IconTheme padrão (executa uma só vez)."""
+    global _registered
+    if _registered:
+        return
+    display = Gdk.Display.get_default()
+    if display and _ICONS_DIR.is_dir():
+        theme = Gtk.IconTheme.get_for_display(display)
+        theme.add_search_path(str(_ICONS_DIR))
+    _registered = True
 
 
 def make_icon(name: str, size: int = 16) -> Gtk.Image:
     """
     Retorna um Gtk.Image para o ícone simbólico dado.
-    Tenta carregar do diretório bundled primeiro, depois fallback para o tema.
-    O ícone herda a cor do texto automaticamente (currentColor no SVG).
+    O ícone herda a cor do tema automaticamente (currentColor no SVG).
     """
-    icon_file = _ICONS_DIR / f"{name}.svg"
-    if icon_file.exists():
-        paintable = Gtk.IconPaintable.new_for_file(
-            Gio.File.new_for_path(str(icon_file)), size, 1
-        )
-        img = Gtk.Image.new_from_paintable(paintable)
-    else:
-        img = Gtk.Image.new_from_icon_name(name)
+    _ensure_registered()
+    img = Gtk.Image.new_from_icon_name(name)
     img.set_pixel_size(size)
     return img
 
 
 def set_icon(image: Gtk.Image, name: str, size: int = 16):
     """Atualiza um Gtk.Image existente com o ícone dado."""
-    icon_file = _ICONS_DIR / f"{name}.svg"
-    if icon_file.exists():
-        paintable = Gtk.IconPaintable.new_for_file(
-            Gio.File.new_for_path(str(icon_file)), size, 1
-        )
-        image.set_from_paintable(paintable)
-    else:
-        image.set_from_icon_name(name)
+    _ensure_registered()
+    image.set_from_icon_name(name)
     image.set_pixel_size(size)

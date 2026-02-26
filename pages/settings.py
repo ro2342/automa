@@ -222,8 +222,7 @@ class SettingsPage(Gtk.Box):
             title=_("MQTT Broker"),
             subtitle=_("Checking connection…"),
         )
-        self.mqtt_icon = Gtk.Image()
-        self.mqtt_icon.set_pixel_size(16)
+        self.mqtt_icon = make_icon("dialog-warning-symbolic", 16)
         self.mqtt_status_row.add_suffix(self.mqtt_icon)
         refresh_btn = Gtk.Button()
         refresh_btn.set_child(make_icon("view-refresh-symbolic"))

@@ -46,6 +46,11 @@ REQUIRED_ICONS = [
     "user-trash-symbolic",
     "utilities-terminal-symbolic",
     "view-refresh-symbolic",
+    # MQTT Config icons
+    "network-server-symbolic",
+    "avatar-default-symbolic",
+    "dialog-password-symbolic",
+    "text-x-generic-symbolic",
 ]
 
 ADWAITA_DIRS = [

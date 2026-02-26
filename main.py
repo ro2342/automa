@@ -219,7 +219,7 @@ class LNXlinkWindow(Adw.ApplicationWindow):
         content_bar.pack_start(toggle_btn)
 
         # Título contextual que muda conforme a página
-        self._page_title = Adw.WindowTitle(title="Dashboard", subtitle="Automa")
+        self._page_title = Adw.WindowTitle(title="Dashboard")
         content_bar.set_title_widget(self._page_title)
 
         # Menu ☰ (kebab/hamburger menu) no canto direito

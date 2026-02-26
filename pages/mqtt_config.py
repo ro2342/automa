@@ -9,6 +9,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
 from config_manager import ConfigManager
+from icon_loader import make_icon
 import i18n
 
 
@@ -44,8 +45,8 @@ class MqttConfigPage(Gtk.Box):
         )
         box.append(broker_group)
 
-        self.host_row = self._make_entry(_("Broker Host / IP"), _("e.g. 192.168.1.10 or homeassistant.local"))
-        self.port_row = self._make_entry(_("Port"), _("Default: 1883"))
+        self.host_row = self._make_entry(_("Broker Host / IP"), _("e.g. 192.168.1.10 or homeassistant.local"), icon="network-server-symbolic")
+        self.port_row = self._make_entry(_("Port"), _("Default: 1883"), icon="network-wireless-symbolic")
         broker_group.add(self.host_row)
         broker_group.add(self.port_row)
 
@@ -56,8 +57,8 @@ class MqttConfigPage(Gtk.Box):
         )
         box.append(auth_group)
 
-        self.user_row = self._make_entry(_("Username"), _("MQTT username"))
-        self.pass_row = self._make_entry(_("Password"), _("MQTT password"), is_password=True)
+        self.user_row = self._make_entry(_("Username"), _("MQTT username"), icon="avatar-default-symbolic")
+        self.pass_row = self._make_entry(_("Password"), _("MQTT password"), is_password=True, icon="dialog-password-symbolic")
         auth_group.add(self.user_row)
         auth_group.add(self.pass_row)
 
@@ -68,8 +69,8 @@ class MqttConfigPage(Gtk.Box):
         )
         box.append(disc_group)
 
-        self.disc_prefix_row = self._make_entry(_("Discovery Prefix"), _("Default: homeassistant"))
-        self.prefix_row      = self._make_entry(_("Automa Prefix"),     _("Default: lnxlink"))
+        self.disc_prefix_row = self._make_entry(_("Discovery Prefix"), _("Default: homeassistant"), icon="go-home-symbolic")
+        self.prefix_row      = self._make_entry(_("Automa Prefix"),     _("Default: lnxlink"), icon="text-x-generic-symbolic")
         disc_group.add(self.disc_prefix_row)
         disc_group.add(self.prefix_row)
 
@@ -79,10 +80,14 @@ class MqttConfigPage(Gtk.Box):
         note.set_halign(Gtk.Align.START)
         box.append(note)
 
-    def _make_entry(self, title: str, placeholder: str, is_password: bool = False):
+    def _make_entry(self, title: str, placeholder: str, is_password: bool = False, icon: str = ""):
         if is_password:
-            return Adw.PasswordEntryRow(title=title)
-        return Adw.EntryRow(title=title)
+            row = Adw.PasswordEntryRow(title=title)
+        else:
+            row = Adw.EntryRow(title=title)
+        if icon:
+            row.add_prefix(make_icon(icon, 16))
+        return row
 
     def _load_values(self):
         mqtt = self.config_manager.get_mqtt()
