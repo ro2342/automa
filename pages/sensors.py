@@ -56,6 +56,10 @@ MODULES = {
     "restful":           ("RESTful API",       "Local HTTP API on port 8112",              "Advanced"),
 }
 
+# Lista de todos os módulos que este app gerencia
+# Usada pelo config_manager para atualização cirúrgica do exclude:
+OUR_MODULES = list(MODULES.keys())
+
 # Módulos desabilitados por padrão pelo próprio LNXlink
 # (aparecem no exclude: quando o LNXlink gera o config pela primeira vez)
 DEFAULT_EXCLUDED = {
@@ -192,16 +196,14 @@ class SensorsPage(Gtk.Box):
         self._schedule_restart()
 
     def _schedule_restart(self):
-        _ = i18n._
         if self._restart_timer is not None:
             GLib.source_remove(self._restart_timer)
-        self._show_status(_("Saving…"))
+        self._show_status(i18n._("Saving…"))
         self._restart_timer = GLib.timeout_add(1500, self._apply)
 
     def _apply(self):
-        _ = i18n._
         self._restart_timer = None
-        self._show_status(_("Applying…"))
+        self._show_status(i18n._("Applying…"))
         self.apply_to_config()
         self.config_manager.save()
         if self.service_manager:
@@ -211,12 +213,11 @@ class SensorsPage(Gtk.Box):
         return GLib.SOURCE_REMOVE
 
     def _restart_thread(self):
-        _ = i18n._
-        ok, _ = self.service_manager.restart()
+        ok, _err = self.service_manager.restart()
         if ok:
-            GLib.idle_add(self._show_status, _("Saved and restarted ✓"), True)
+            GLib.idle_add(self._show_status, i18n._("Saved and restarted ✓"), True)
         else:
-            GLib.idle_add(self._show_status, _("Saved — restart failed, check service"), True)
+            GLib.idle_add(self._show_status, i18n._("Saved — restart failed, check service"), True)
 
     def _show_status(self, msg, done=False):
         self._status_box.set_visible(True)

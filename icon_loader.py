@@ -46,10 +46,12 @@ def make_icon(name: str, size: int = 16) -> Gtk.Image:
     """
     Retorna um Gtk.Image para o ícone simbólico dado.
     O ícone herda a cor do tema automaticamente (currentColor no SVG).
+    valign=CENTER evita o warning de baseline do GTK4.
     """
     _ensure_registered()
     img = Gtk.Image.new_from_icon_name(name)
     img.set_pixel_size(size)
+    img.set_valign(Gtk.Align.CENTER)
     return img
 
 
@@ -58,3 +60,4 @@ def set_icon(image: Gtk.Image, name: str, size: int = 16):
     _ensure_registered()
     image.set_from_icon_name(name)
     image.set_pixel_size(size)
+    image.set_valign(Gtk.Align.CENTER)
