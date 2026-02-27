@@ -50,4 +50,4 @@ modules:
     sources:
       - type: git
         url: https://github.com/ro2342/automa.git
-        commit: 75137e51dd346acefae9540586f99e96c2c59cfd
+        commit: aefe363fdff714d93ba76b53fdf26a3dcc924661
