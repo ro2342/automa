@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "automa"
+version = "1.1.1"
+description = "GNOME control panel for the LNXlink MQTT agent"
+readme = "README.md"
+license = { spdx = "GPL-3.0-or-later" }
+requires-python = ">=3.11"
+dependencies = ["ruamel.yaml"]
+
+[project.urls]
+Homepage = "https://github.com/ro2342/automa"
+Repository = "https://github.com/ro2342/automa"
+
+[project.scripts]
+automa = "main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pages*"]
